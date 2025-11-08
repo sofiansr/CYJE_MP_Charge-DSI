@@ -21,7 +21,7 @@
                 </a>
                 <h1 id="login-title">Espace Gestion de prospects</h1>
                 <p class="login-subtitle">Accès réservé aux membres de la CY JUNIOR ENGINEERING</p>
-                <form method="post" action="auth.php" class="login-form" autocomplete="off">
+                <form method="post" action="scripts/auth.php" class="login-form" autocomplete="off" id="login-form">
                     <div class="form-group">
                         <label for="email">Email @CYJE.fr</label>
                         <input type="email" id="email" name="email" required placeholder="prenom.nom@cyje.fr">
@@ -32,9 +32,35 @@
                     </div>
                     <button type="submit" class="btn-primary">Se connecter</button>
                     <div class="login-hint">Identifiants fournis par l'administrateur.</div>
+                    <div id="login-error" style="margin-top:.75rem;font-size:.85rem;color:#c1121f;font-weight:600;"></div>
                 </form>
             </div>
         </section>
     </main>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorBox = document.getElementById('login-error');
+            errorBox.textContent = '';
+            const form = e.target;
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'fetch' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    errorBox.textContent = data.error || 'Erreur inconnue';
+                }
+            } catch (err) {
+                errorBox.textContent = 'Erreur réseau';
+            }
+        });
+    </script>
 </body>
 </html>
