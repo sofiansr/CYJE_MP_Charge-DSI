@@ -37,7 +37,7 @@
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id, email, password, role FROM users WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, email, password, role, nom, prenom FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -51,7 +51,9 @@
     session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_email'] = $user['email'];
-    $_SESSION['user_role'] = $user['role'];    
+    $_SESSION['user_role'] = $user['role'];
+    $_SESSION['user_nom'] = $user['nom'] ?? '';
+    $_SESSION['user_prenom'] = $user['prenom'] ?? '';
 
     echo json_encode(['success' => true, 'redirect' => 'home.html']);
 ?>
