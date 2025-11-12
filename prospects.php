@@ -48,21 +48,32 @@
             <div class="toolbar">
                 <!-- Recherche texte sur plusieurs colonnes côté API -->
                 <input id="search" class="search-input" type="search" placeholder="Rechercher... (entreprise, secteur, adresse, ...)">
+                <!--
+                    Bloc de FILTRAGE ciblé (champ + valeur):
+                    - #filter-field: sélectionne la colonne à filtrer (enum/texte/date). Les valeurs correspondent aux colonnes SQL whitelistees côté API.
+                    - #filter-value: champ texte libre (utilisé pour entreprise, secteur, etc. s'ils sont exposés dans la liste) -> la valeur est envoyée telle quelle.
+                    - #filter-value-select: liste des valeurs prédéfinies (ENUM) pour status_prospect, type_acquisition, type_premier_contact, chaleur, offre_prestation.
+                    - #filter-value-date: calendrier natif pour les champs date (relance_le, date_premier_contact). La valeur YYYY-MM-DD est convertie en DD-MM-YYYY avant envoi.
+                    Règle: un seul contrôle de valeur est visible à la fois. La fonction updateFilterInputVisibility() décide lequel afficher selon le champ choisi.
+                -->
                 <div style="display:flex; gap:.5rem; align-items:center;">
                     <!-- sélecteur de champ de filtre -->
                     <select id="filter-field" class="select" aria-label="Filtrer par">
                         <option value="">Filtrer par...</option>
-                        <option value="entreprise">Entreprise</option>
-                        <option value="secteur">Secteur</option>
-                        <option value="status">Statut</option>
+                        <option value="status_prospect">Statut</option>
                         <option value="type_acquisition">Type d'acquisition</option>
                         <option value="type_premier_contact">Type 1er contact</option>
                         <option value="chaleur">Chaleur</option>
                         <option value="offre_prestation">Offre prestation</option>
+                        <option value="relance_le">Relancé le</option>
                         <option value="date_premier_contact">Date 1er contact (DD-MM-YYYY)</option>
                     </select>
-                    <!-- Saisie de la valeur de filtre -->
+                    <!-- saisie de la valeur de filtre : -->
                     <input id="filter-value" class="input" type="text" placeholder="Valeur du filtre">
+                    <!-- Liste déroulante pour les valeurs prédéfinies du filtre : -->
+                    <select id="filter-value-select" class="select" style="display:none"></select>
+                    <!-- Calendrier (date) : visible pour relance_le et date_premier_contact -->
+                    <input id="filter-value-date" class="input" type="date" style="display:none" aria-label="Date du filtre">
                 </div>
                 <div style="display:flex; gap:.5rem;">
                     <button id="apply-filter" class="btn btn-primary">Appliquer</button>
@@ -161,6 +172,8 @@
             const searchInput = document.getElementById('search');    // Champ de recherche globale
             const filterField = document.getElementById('filter-field'); // Select: nom du champ à filtrer
             const filterValue = document.getElementById('filter-value'); // Input: valeur du filtre
+            const filterValueSelect = document.getElementById('filter-value-select'); // Select: valeur prédéfinie
+            const filterValueDate = document.getElementById('filter-value-date'); // Input date: valeur date du filtre
             const btnApply = document.getElementById('apply-filter'); // Bouton: appliquer le filtre
             const btnReset = document.getElementById('reset-filter'); // Bouton: réinitialiser le filtre
             const btnPrev = document.getElementById('prev');          // Bouton pagination: page précédente
@@ -175,6 +188,76 @@
             let fField = '';              // nom du champ pour filtrage ciblé
             let fValue = '';              // valeur du filtre ciblé
             let debounceTimer;            // identifiant du timer de debounce pour la recherche
+            
+            // status prospect
+            const STATUS_OPTIONS = ['A contacter', 'Contacté', 'A rappeler', 'Relancé', 'RDV', 'PC', 'Signé', 'PC refusée', 'Perdu'];
+            // type_acquisition
+            const ACQUISITION_OPTIONS = ['DE', "Appel d'offre", 'Web crawling', 'Porte à porte', 'IRL', 'Fidélisation', 'BaNCO', 'Partenariat'];
+            // type_premier_contact
+            const TYPE_PREMIER_CONTACT_OPTIONS = ['Porte à porte', 'Formulaire de contact', 'Event CY Entreprise', 'LinkedIn', 'Mail', "Appel d'offre", 'DE', 'Cold call', 'Salon'];
+            // chaleur
+            const CHALEUR_OPTIONS = ['Froid', 'Tiède', 'Chaud'];
+            // offre_prestation
+            const OFFRE_PRESTATION_OPTIONS = ['Informatique', 'Chimie', 'Biotechnologies', 'Génie civil'];
+            // Remplit la liste déroulante de valeurs pour un champ donné
+            function populateFilterSelect(options, placeholder = 'Choisir...') {
+                filterValueSelect.innerHTML = '';
+                const optPlaceholder = document.createElement('option');
+                optPlaceholder.value = '';
+                optPlaceholder.textContent = placeholder;
+                filterValueSelect.appendChild(optPlaceholder);
+                for (const v of options) {
+                    const o = document.createElement('option');
+                    o.value = v;
+                    o.textContent = v;
+                    filterValueSelect.appendChild(o);
+                }
+            }
+
+            // Bascule entre input texte et liste déroulante en fonction du champ à filtrer
+            function updateFilterInputVisibility() {
+                const field = filterField.value;
+                // reset valeurs
+                filterValue.value = '';
+                filterValueSelect.value = '';
+                filterValueDate.value = '';
+                if (field === 'status_prospect') {
+                    populateFilterSelect(STATUS_OPTIONS, 'Sélectionner un statut');
+                    filterValue.style.display = 'none';
+                    filterValueSelect.style.display = '';
+                    filterValueDate.style.display = 'none'; // on n'affiche pas le calendrier
+                } else if (field === 'type_acquisition') {
+                    populateFilterSelect(ACQUISITION_OPTIONS, "Sélectionner un type d'acquisition");
+                    filterValue.style.display = 'none';
+                    filterValueSelect.style.display = '';
+                    filterValueDate.style.display = 'none';
+                } else if (field === 'type_premier_contact') {
+                    populateFilterSelect(TYPE_PREMIER_CONTACT_OPTIONS, "Sélectionner un type de 1er contact");
+                    filterValue.style.display = 'none';
+                    filterValueSelect.style.display = '';
+                    filterValueDate.style.display = 'none';
+                } else if (field === 'chaleur') {
+                    populateFilterSelect(CHALEUR_OPTIONS, 'Sélectionner une chaleur');
+                    filterValue.style.display = 'none';
+                    filterValueSelect.style.display = '';
+                    filterValueDate.style.display = 'none';
+                } else if (field === 'offre_prestation') {
+                    populateFilterSelect(OFFRE_PRESTATION_OPTIONS, 'Sélectionner une offre');
+                    filterValue.style.display = 'none';
+                    filterValueSelect.style.display = '';
+                    filterValueDate.style.display = 'none';
+                } else if (field === 'relance_le' || field === 'date_premier_contact') {
+                    // on affiche le calendrier
+                    filterValue.style.display = 'none';
+                    filterValueSelect.style.display = 'none';
+                    filterValueDate.style.display = '';
+                } else {
+                    // Cas par défaut: texte libre
+                    filterValue.style.display = '';
+                    filterValueSelect.style.display = 'none';
+                    filterValueDate.style.display = 'none';
+                }
+            }
             
             /**
              * Formate une date MySQL/ISO en DD-MM-YYYY pour l'affichage utilisateur.
@@ -315,10 +398,24 @@
                 }, 300);
             });
             
-            // Appliquer le filtre ciblé: prend la valeur sélectionnée + saisie et recharge
+            // Changement de champ de filtre -> met à jour l'UI du contrôle de valeur
+            filterField.addEventListener('change', updateFilterInputVisibility);
+
+            // Appliquer le filtre ciblé: lit la valeur dans le contrôle visible, adapte le format des dates, et recharge
             btnApply.addEventListener('click', () => {
                 fField = filterField.value;
-                fValue = filterValue.value.trim();
+                // Choisit la source: select visible (statut) ou input texte
+                let currentValue = '';
+                if (filterValueDate.style.display !== 'none') {
+                    // L'input date renvoie YYYY-MM-DD -> convertir en DD-MM-YYYY pour correspondre au DATE_FORMAT du backend
+                    const ymd = filterValueDate.value;
+                    currentValue = ymd ? fmtDate(ymd) : '';
+                } else if (filterValueSelect.style.display !== 'none') {
+                    currentValue = filterValueSelect.value;
+                } else {
+                    currentValue = filterValue.value;
+                }
+                fValue = String(currentValue || '').trim();
                 page = 1;
                 load();
             });
@@ -327,6 +424,11 @@
             btnReset.addEventListener('click', () => {
                 filterField.value = '';
                 filterValue.value = '';
+                filterValueSelect.value = '';
+                filterValue.style.display = '';
+                filterValueSelect.style.display = 'none';
+                filterValueDate.value = '';
+                filterValueDate.style.display = 'none';
                 fField = '';
                 fValue = '';
                 page = 1;
@@ -337,7 +439,8 @@
             btnPrev.addEventListener('click', () => { if (page > 1) { page--; load(); } });
             btnNext.addEventListener('click', () => { if (page < totalPages) { page++; load(); } });
             
-            // Premier rendu: charge la page initiale avec l'état par défaut
+            // Premier rendu: prépare l'UI de filtre et charge la page initiale
+            updateFilterInputVisibility();
             load();
         })();
     </script>

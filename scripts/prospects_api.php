@@ -69,8 +69,10 @@
         }
     }
 
-    // filtre par champ: LIKE sur les strings, et DATE_FORMAT en DD-MM-YYYY pour les colonnes date
-    // si le champ n'est pas dans la whitelist, le filtre est ignoré
+    // Filtre par champ ciblé:
+    // - texte: LIKE sur p.<field>
+    // - date: on formate via DATE_FORMAT(..., '%d-%m-%Y') pour rester aligné avec le front qui envoie DD-MM-YYYY
+    // Si le champ n'est pas dans la whitelist, le filtre est ignoré
     if ($filterField !== '' && in_array($filterField, $allowedFields, true) && $filterValue !== '') {
         if (in_array($filterField, ['date_premier_contact', 'relance_le'], true)) {
             // Pour les dates, on compare via DATE_FORMAT en DD-MM-YYYY pour être aligné avec le front
