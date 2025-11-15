@@ -1,4 +1,13 @@
 // Responsabilités: gérer l'état (page, recherche, filtres), appeler l'API, rendre le tableau, piloter la pagination.
+//
+// Edition de prospect — logique front
+//
+// Ce module gère:
+// 1) L'ouverture du panneau Détails, le chargement des données complètes d'un prospect (GET action=detail)
+// 2) Le rendu d'un formulaire en lecture seule puis son déverrouillage (Modifier/Annuler)
+// 3) La mise à jour (POST action=update) incluant le remplacement complet des contacts
+// 4) Le select "Chef de projet" (libellé "prénom nom", valeur id) chargé via GET action=users
+// 5) La suppression (POST action=delete) 
 (function () {
     // Récupération des références DOM (ciblage unique par id).
     const tbody = document.getElementById('tbody');          // Corps du tableau où les lignes seront injectées
@@ -15,9 +24,26 @@
     // Références panneau détail
     const detailPanel = document.getElementById('detail-panel');
     const detailClose = document.getElementById('detail-close');
+    // Champs formulaire détails (prospect)
+    const detailForm = document.getElementById('detail-form');
+    const detailEntreprise = document.getElementById('detail-entreprise');
+    const detailSecteur = document.getElementById('detail-secteur');
     const detailAdresse = document.getElementById('detail-adresse');
-    const detailSiteweb = document.getElementById('detail-siteweb');
-    const detailCommentaire = document.getElementById('detail-commentaire');
+    const detailSite = document.getElementById('detail-site');
+    const detailStatus = document.getElementById('detail-status');
+    const detailAcq = document.getElementById('detail-acq');
+    const detailTpc = document.getElementById('detail-tpc');
+    const detailChaleur = document.getElementById('detail-chaleur');
+    const detailOffre = document.getElementById('detail-offre');
+    const detailRelance = document.getElementById('detail-relance');
+    const detailDatePC = document.getElementById('detail-datepc');
+    const detailChef = document.getElementById('detail-chef');
+    const detailComment = document.getElementById('detail-comment');
+    const detailContacts = document.getElementById('detail-contacts');
+    const detailAddContact = document.getElementById('detail-add-contact');
+    const detailEdit = document.getElementById('detail-edit');
+    const detailSave = document.getElementById('detail-save');
+    const detailCancel = document.getElementById('detail-cancel');
     const detailDelete = document.getElementById('detail-delete');
     let currentDetailId = null; // id du prospect affiché dans le panneau de détail
     // Références panneau ajout
@@ -62,7 +88,8 @@
     // offre_prestation
     const OFFRE_PRESTATION_OPTIONS = ['Informatique', 'Chimie', 'Biotechnologies', 'Génie civil'];
     // Remplit la liste déroulante de valeurs pour un champ donné
-    function populateFilterSelect(options, placeholder = 'Choisir...') {
+            // Remplit le select des valeurs de filtre (toolbar de la liste)
+            function populateFilterSelect(options, placeholder = 'Choisir...') {
         filterValueSelect.innerHTML = '';
         const optPlaceholder = document.createElement('option');
         optPlaceholder.value = '';
@@ -230,24 +257,133 @@
         }
     }
 
-    // Ouvre le panneau de détails avec les données fournies
-    function openDetail(id, adresse, siteweb, commentaire) {
-        currentDetailId = id ? Number(id) : null;
-        detailAdresse.textContent = adresse || '—';
-        // site web: lien cliquable si présent
-        if (siteweb) {
-            const safe = escapeHtml(siteweb);
-            detailSiteweb.innerHTML = `<a href="${escapeAttr(siteweb)}" target="_blank" rel="noopener">${safe}</a>`;
-        } else {
-            detailSiteweb.textContent = '—';
-        }
-        detailCommentaire.textContent = commentaire || '—';
-        detailPanel.setAttribute('aria-hidden', 'false');
-        detailPanel.classList.add('visible');
-        // Fallback si CSS non chargé: on force la translation à 0
-        detailPanel.style.transform = 'translateX(0)';
-        document.body.classList.add('detail-panel-open');
-    }
+            // Helpers selects ENUM pour détail
+            /**
+             * Remplit un <select> avec un placeholder et un tableau de chaînes
+             * Utilisé pour les champs ENUM (status, acquisition, etc.)
+             */
+            function fillSelect(sel, options, placeholder='Choisir...'){
+                sel.innerHTML = '';
+                const ph = document.createElement('option'); ph.value=''; ph.textContent=placeholder; sel.appendChild(ph);
+                for (const v of options){ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); }
+            }
+            /**
+             * Remplit un <select> avec des paires { value, label }
+             * Utilisé pour le select des chefs de projet (value = id, label = "prénom nom")
+             */
+            function fillSelectPairs(sel, items, placeholder='Choisir...'){
+                sel.innerHTML = '';
+                const ph = document.createElement('option'); ph.value=''; ph.textContent=placeholder; sel.appendChild(ph);
+                for (const it of items){ const o=document.createElement('option'); o.value=String(it.value); o.textContent=it.label; sel.appendChild(o); }
+            }
+            let DETAIL_USERS_CACHE = null;
+            // Charge (une fois) la liste des utilisateurs pour le select Chef de projet
+            async function loadUsersList(){
+                if (DETAIL_USERS_CACHE) return DETAIL_USERS_CACHE;
+                const res = await fetch('scripts/prospects_api.php?action=users', { headers: { 'X-Requested-With': 'fetch' } });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erreur chargement utilisateurs');
+                DETAIL_USERS_CACHE = Array.isArray(data.users) ? data.users : [];
+                return DETAIL_USERS_CACHE;
+            }
+
+            // Ajoute une ligne contact dans le formulaire détail
+            /**
+             * Ajoute une ligne "contact" dans le formulaire détail
+             * Mode lecture seule par défaut, le bouton supprimer contact est visible uniquement en mode édition
+             */
+            function detailAddContactRow(values={}){
+                const wrap = document.createElement('div');
+                wrap.className = 'contact-row';
+                wrap.innerHTML = `
+                    <input class="input" type="text" placeholder="Nom" value="${values.nom||''}" disabled>
+                    <input class="input" type="text" placeholder="Prénom" value="${values.prenom||''}" disabled>
+                    <input class="input" type="email" placeholder="Email" value="${values.email||''}" disabled>
+                    <input class="input" type="tel" placeholder="Téléphone" value="${values.tel||''}" disabled>
+                    <input class="input" type="text" placeholder="Poste" value="${values.poste||''}" disabled>
+                    <button type="button" class="btn btn-ghost remove-contact" title="Supprimer" style="display:none">✕</button>`;
+                detailContacts.appendChild(wrap);
+            }
+
+            // Verrouille/déverrouille tous les champs du formulaire détail
+            /**
+             * Verrouille/déverrouille tous les champs du formulaire détail
+             * locked=true  => lecture seule (désactive inputs/selects, cache boutons remove & add)
+             * locked=false => modif possible
+             */
+            function setDetailLocked(locked){
+                const controls = detailForm.querySelectorAll('input, select, textarea, .remove-contact');
+                controls.forEach(el => {
+                    if (el.classList && el.classList.contains('remove-contact')){
+                        el.style.display = locked ? 'none' : '';
+                    } else {
+                        el.disabled = locked;
+                    }
+                });
+                detailAddContact.style.display = locked ? 'none' : '';
+                detailEdit.style.display = locked ? '' : 'none';
+                detailSave.style.display = locked ? 'none' : '';
+                detailCancel.style.display = locked ? 'none' : '';
+            }
+
+            // Charge et ouvre le détail par ID (préremplit le formulaire en lecture seule)
+            async function openDetail(id) {
+                currentDetailId = id ? Number(id) : null;
+                // peupler selects enum
+                fillSelect(detailStatus, STATUS_OPTIONS, 'Choisir...');
+                fillSelect(detailAcq, ACQUISITION_OPTIONS, 'Choisir...');
+                fillSelect(detailTpc, TYPE_PREMIER_CONTACT_OPTIONS, 'Choisir...');
+                fillSelect(detailChaleur, CHALEUR_OPTIONS, 'Choisir...');
+                fillSelect(detailOffre, OFFRE_PRESTATION_OPTIONS, 'Choisir...');
+
+                // état chargement simple
+                detailContacts.innerHTML = '';
+                setDetailLocked(true);
+
+                try {
+                    const res = await fetch(`scripts/prospects_api.php?action=detail&id=${encodeURIComponent(currentDetailId)}`, { headers: { 'X-Requested-With': 'fetch' } });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error || 'Introuvable');
+                    const p = data.prospect || {};
+                    // Charger la liste des chefs de projet, puis sélectionner la valeur
+                    try {
+                        const users = await loadUsersList();
+                        const items = users.map(u => ({ value: u.id, label: `${u.prenom} ${u.nom}`.trim() }));
+                        fillSelectPairs(detailChef, items, 'Choisir un chef de projet...');
+                    } catch(_) {
+                        // placeholder déjà présent
+                    }
+                    // Remplit les champs
+                    detailEntreprise.value = p.entreprise || '';
+                    detailSecteur.value = p.secteur || '';
+                    detailAdresse.value = p.adresse_entreprise || '';
+                    detailSite.value = p.site_web_entreprise || '';
+                    detailStatus.value = p.status_prospect || '';
+                    detailAcq.value = p.type_acquisition || '';
+                    detailTpc.value = p.type_premier_contact || '';
+                    detailChaleur.value = p.chaleur || '';
+                    detailOffre.value = p.offre_prestation || '';
+                    detailRelance.value = p.relance_le || '';
+                    detailDatePC.value = p.date_premier_contact || '';
+                    detailChef.value = (p.chef_de_projet_id != null ? String(p.chef_de_projet_id) : '');
+                    detailComment.value = p.commentaire || '';
+                    // contacts
+                    detailContacts.innerHTML = '';
+                    const contacts = Array.isArray(data.contacts) ? data.contacts : [];
+                    if (contacts.length === 0) {
+                        detailAddContactRow({});
+                    } else {
+                        contacts.forEach(c => detailAddContactRow(c));
+                    }
+                } catch (e) {
+                    alert('Erreur: ' + (e.message || 'inconnue'));
+                }
+
+                detailPanel.setAttribute('aria-hidden','false');
+                detailPanel.classList.add('visible');
+                detailPanel.style.transform = 'translateX(0)';
+                document.body.classList.add('detail-panel-open');
+            }
     function closeDetail() {
         detailPanel.classList.remove('visible');
         detailPanel.setAttribute('aria-hidden', 'true');
@@ -259,11 +395,88 @@
     detailClose.addEventListener('click', closeDetail);
     // Event delegation pour les boutons détail
     // On transmet aussi l'ID du prospect via data-id pour pouvoir déclencher la suppression depuis le panneau
-    tbody.addEventListener('click', (e) => {
+            tbody.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-detail');
         if (!btn) return;
-        openDetail(btn.dataset.id, btn.dataset.adresse, btn.dataset.siteweb, btn.dataset.commentaire);
+                openDetail(btn.dataset.id);
     });
+
+            // Ajout/suppression de contacts en mode édition (détails)
+            detailAddContact.addEventListener('click', () => {
+                detailAddContactRow({});
+                setDetailLocked(false); // maintenir l'état
+            });
+            detailContacts.addEventListener('click', (e)=>{
+                const b = e.target.closest('.remove-contact');
+                if (!b) return;
+                b.parentElement.remove();
+            });
+
+            // Edit/Cancel
+            detailEdit.addEventListener('click', () => {
+                setDetailLocked(false);
+            });
+            detailCancel.addEventListener('click', () => {
+                if (!currentDetailId) return;
+                openDetail(currentDetailId); // recharge et reverrouille
+            });
+
+            // Enregistrer modifications
+            /**
+             * Soumet les modifications (POST action=update)
+             * - Construit payload { id, prospect:{...}, contacts:[...] }
+             * - Contacts: stratégie de remplacement complet côté API
+             * - Sur succès: relock + rafraîchit la liste
+             */
+            detailForm.addEventListener('submit', async (e)=>{
+                e.preventDefault();
+                if (!currentDetailId) return;
+                const contacts = Array.from(detailContacts.children).map(row=>{
+                    const [nom, prenom, email, tel, poste] = row.querySelectorAll('input');
+                    return {
+                        nom: nom.value.trim(),
+                        prenom: prenom.value.trim(),
+                        email: email.value.trim(),
+                        tel: tel.value.trim(),
+                        poste: poste.value.trim()
+                    };
+                }).filter(c => c.nom || c.prenom || c.email || c.tel || c.poste);
+                const payload = {
+                    action: 'update',
+                    id: currentDetailId,
+                    prospect: {
+                        entreprise: detailEntreprise.value.trim(),
+                        secteur: detailSecteur.value.trim(),
+                        adresse_entreprise: detailAdresse.value.trim(),
+                        site_web_entreprise: detailSite.value.trim(),
+                        status_prospect: detailStatus.value,
+                        type_acquisition: detailAcq.value,
+                        type_premier_contact: detailTpc.value,
+                        chaleur: detailChaleur.value,
+                        offre_prestation: detailOffre.value,
+                        relance_le: detailRelance.value || null,
+                        date_premier_contact: detailDatePC.value || null,
+                        chef_de_projet_id: detailChef.value ? Number(detailChef.value) : null,
+                        commentaire: detailComment.value.trim()
+                    },
+                    contacts
+                };
+                if (!payload.prospect.entreprise){ alert('Entreprise est obligatoire'); return; }
+                if (!payload.prospect.chef_de_projet_id){ alert('Chef de projet est obligatoire'); return; }
+                try {
+                    const res = await fetch('scripts/prospects_api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error || 'Echec de mise à jour');
+                    setDetailLocked(true);
+                    load(); // rafraîchit la liste
+                } catch(err){
+                    alert('Erreur: ' + (err.message||'inconnue'));
+                }
+            });
 
     // Suppression du prospect courant depuis le panneau détails
     // Contrat API: POST scripts/prospects_api.php body { action:'delete', id:number }

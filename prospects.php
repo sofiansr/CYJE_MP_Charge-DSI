@@ -172,44 +172,109 @@
         </footer>
     </main>
     <!-- Panneau latéral de détails (overlay) masqué par défaut -->
-    <aside id="detail-panel" class="detail-panel" aria-hidden="true" style="position:fixed;top:0;right:0;height:100vh;width:380px;transform:translateX(100%);background:#eceff1;z-index:110;display:flex;flex-direction:column;">
+    <aside id="detail-panel" class="detail-panel" aria-hidden="true" style="position:fixed;top:0;right:0;height:100vh;width:420px;transform:translateX(100%);background:#eceff1;z-index:110;display:flex;flex-direction:column;">
         <div class="detail-panel-header">
             <h2 class="detail-panel-title">Détails du prospect</h2>
             <button type="button" id="detail-close" class="detail-close" aria-label="Fermer">×</button>
         </div>
         <div class="detail-panel-body">
-            <dl class="detail-list">
-                <dt>Adresse</dt>
-                <dd id="detail-adresse">—</dd>
-                <dt>Site web</dt>
-                <dd id="detail-siteweb">—</dd>
-                <dt>Commentaire</dt>
-                <dd id="detail-commentaire">—</dd>
-            </dl>
             <!--
-                Action de suppression
-                - Bouton rouge "Supprimer ce prospect" dans le panneau Détails
-                - Enclenche un confirm() puis POST JSON { action:'delete', id:<prospectId> } vers scripts/prospects_api.php
-                - Sur succès: ferme le panneau et recharge la liste
+                Formulaire de consultation/édition (verrouillé par défaut)
+                - Bouton "Modifier" déverrouille et affiche les contrôles d'ajout/suppression de contacts
+                - Bouton "Enregistrer" soumet les changements via POST { action:'update', id, prospect:{...}, contacts:[...] }
+                - Bouton "Annuler" rétablit les valeurs et reverrouille
+                Rôle:
+                - Afficher tous les champs d'un prospect + ses contacts.
+                - Passer en mode édition sur clic "Modifier" (les champs deviennent actifs et on peut ajouter/supprimer des contacts).
+                - Soumettre les modifications via POST JSON vers scripts/prospects_api.php (action 'update').
+
+                Contacts (#detail-contacts): chaque .contact-row produit un objet { nom, prenom, email, tel, poste }.
+                Politique: remplacement complet (DELETE puis réinsert) côté API 
+
+                Boutons d'action:
+                - #detail-edit   : déverrouille le formulaire
+                - #detail-save   : soumet et reverrouille si succès
+                - #detail-cancel : recharge les valeurs d'origine (GET action=detail) et reverrouille
             -->
-            <div class="detail-actions" style="margin-top:1rem; display:flex; justify-content:flex-end;">
-                <button type="button" id="detail-delete" class="btn btn-danger">Supprimer ce prospect</button>
-            </div>
+            <form id="detail-form">
+                <div class="form-grid">
+                    <label>Entreprise
+                        <input id="detail-entreprise" class="input" type="text" disabled>
+                    </label>
+                    <label>Secteur
+                        <input id="detail-secteur" class="input" type="text" disabled>
+                    </label>
+                    <label>Adresse
+                        <input id="detail-adresse" class="input" type="text" disabled>
+                    </label>
+                    <label>Site web
+                        <input id="detail-site" class="input" type="url" placeholder="https://..." disabled>
+                    </label>
+                    <label>Statut
+                        <select id="detail-status" class="select" disabled></select>
+                    </label>
+                    <label>Type d'acquisition
+                        <select id="detail-acq" class="select" disabled></select>
+                    </label>
+                    <label>Type 1er contact
+                        <select id="detail-tpc" class="select" disabled></select>
+                    </label>
+                    <label>Chaleur
+                        <select id="detail-chaleur" class="select" disabled></select>
+                    </label>
+                    <label>Offre prestation
+                        <select id="detail-offre" class="select" disabled></select>
+                    </label>
+                    <label>Relancé le
+                        <input id="detail-relance" class="input" type="date" disabled>
+                    </label>
+                    <label>Date 1er contact
+                        <input id="detail-datepc" class="input" type="date" disabled>
+                    </label>
+                    <label>Chef de projet
+                        <select id="detail-chef" class="select" disabled>
+                            <option value="">Choisir un chef de projet...</option>
+                        </select>
+                    </label>
+                    <label>Commentaire
+                        <textarea id="detail-comment" class="input" rows="3" disabled></textarea>
+                    </label>
+                </div>
+                <div class="form-section">
+                    <h3>Contacts</h3>
+                    <div class="contacts-head">
+                        <span>Nom</span>
+                        <span>Prénom</span>
+                        <span>Email</span>
+                        <span>Téléphone</span>
+                        <span>Poste</span>
+                        <span></span>
+                    </div>
+                    <div id="detail-contacts" class="contacts-list"></div>
+                    <button type="button" id="detail-add-contact" class="btn" style="display:none">Ajouter un contact</button>
+                </div>
+                <div style="margin-top:1rem; display:flex; gap:.5rem; justify-content:flex-end;">
+                    <button type="button" id="detail-edit" class="btn">Modifier</button>
+                    <button type="submit" id="detail-save" class="btn btn-primary" style="display:none">Enregistrer</button>
+                    <button type="button" id="detail-cancel" class="btn btn-ghost" style="display:none">Annuler</button>
+                    <button type="button" id="detail-delete" class="btn btn-danger" style="margin-left:auto">Supprimer ce prospect</button>
+                </div>
+            </form>
         </div>
     </aside>
         <!--
-                Panneau latéral d'ajout de prospect (overlay)
-                - Présenté comme le panneau de détails, largeur fixe ~380px
-                - Contient:
-                    * Bloc principal .form-grid (carte blanche) avec les champs du prospect:
-                        Entreprise (requis), Secteur, Adresse, Site web (URL), Statut, Type d'acquisition,
-                        Type 1er contact, Chaleur, Offre prestation, Relancé le (date), Date 1er contact (date),
-                        Chef de projet (ID, requis), Commentaire.
-                    * Section Contacts (zéro, un ou plusieurs) — chaque contact est rendu dans une "contact-row"
-                        verticale avec Nom, Prénom, Email, Téléphone, Poste + bouton supprimer.
-                - Validation minimale côté client: Entreprise + Chef de projet (ID) requis.
-                - Dates envoyées au backend au format natif de l'input: YYYY-MM-DD.
-                - Les listes (ENUM) sont alimentées au moment de l'ouverture du panneau via fillSelect(...).
+            Panneau latéral d'ajout de prospect (overlay)
+            - Présenté comme le panneau de détails, largeur fixe ~380px
+            - Contient:
+                * Bloc principal .form-grid (carte blanche) avec les champs du prospect:
+                    Entreprise (requis), Secteur, Adresse, Site web (URL), Statut, Type d'acquisition,
+                    Type 1er contact, Chaleur, Offre prestation, Relancé le (date), Date 1er contact (date),
+                    Chef de projet (ID, requis), Commentaire.
+                * Section Contacts (zéro, un ou plusieurs) — chaque contact est rendu dans une "contact-row"
+                    verticale avec Nom, Prénom, Email, Téléphone, Poste + bouton supprimer.
+            - Validation minimale côté client: Entreprise + Chef de projet (ID) requis.
+            - Dates envoyées au backend au format natif de l'input: YYYY-MM-DD.
+            - Les listes (ENUM) sont alimentées au moment de l'ouverture du panneau via fillSelect(...).
         -->
     <aside id="add-panel" class="detail-panel" aria-hidden="true">
         <div class="detail-panel-header">
