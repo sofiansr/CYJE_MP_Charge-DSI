@@ -186,6 +186,15 @@
                 <dt>Commentaire</dt>
                 <dd id="detail-commentaire">—</dd>
             </dl>
+            <!--
+                Action de suppression
+                - Bouton rouge "Supprimer ce prospect" dans le panneau Détails
+                - Enclenche un confirm() puis POST JSON { action:'delete', id:<prospectId> } vers scripts/prospects_api.php
+                - Sur succès: ferme le panneau et recharge la liste
+            -->
+            <div class="detail-actions" style="margin-top:1rem; display:flex; justify-content:flex-end;">
+                <button type="button" id="detail-delete" class="btn btn-danger">Supprimer ce prospect</button>
+            </div>
         </div>
     </aside>
         <!--
@@ -293,6 +302,8 @@
             const detailAdresse = document.getElementById('detail-adresse');
             const detailSiteweb = document.getElementById('detail-siteweb');
             const detailCommentaire = document.getElementById('detail-commentaire');
+            const detailDelete = document.getElementById('detail-delete');
+            let currentDetailId = null; // id du prospect affiché dans le panneau de détail
             // Références panneau ajout
             const addBtn = document.getElementById('btn-add-prospect');
             const addPanel = document.getElementById('add-panel');
@@ -503,7 +514,8 @@
             }
 
             // Ouvre le panneau de détails avec les données fournies
-            function openDetail(adresse, siteweb, commentaire) {
+            function openDetail(id, adresse, siteweb, commentaire) {
+                currentDetailId = id ? Number(id) : null;
                 detailAdresse.textContent = adresse || '—';
                 // site web: lien cliquable si présent
                 if (siteweb) {
@@ -525,13 +537,38 @@
                 // Fallback: refermer par translation
                 detailPanel.style.transform = 'translateX(100%)';
                 document.body.classList.remove('detail-panel-open');
+                currentDetailId = null;
             }
             detailClose.addEventListener('click', closeDetail);
             // Event delegation pour les boutons détail
+            // On transmet aussi l'ID du prospect via data-id pour pouvoir déclencher la suppression depuis le panneau
             tbody.addEventListener('click', (e) => {
                 const btn = e.target.closest('.btn-detail');
                 if (!btn) return;
-                openDetail(btn.dataset.adresse, btn.dataset.siteweb, btn.dataset.commentaire);
+                openDetail(btn.dataset.id, btn.dataset.adresse, btn.dataset.siteweb, btn.dataset.commentaire);
+            });
+
+            // Suppression du prospect courant depuis le panneau détails
+            // Contrat API: POST scripts/prospects_api.php body { action:'delete', id:number }
+            // Réponse: { success:true } ou { success:false, error }
+            detailDelete.addEventListener('click', async () => {
+                if (!currentDetailId) return;
+                const ok = confirm('Supprimer définitivement ce prospect et ses contacts ?');
+                if (!ok) return;
+                try {
+                    const res = await fetch('scripts/prospects_api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'delete', id: currentDetailId })
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error || 'Suppression impossible');
+                    closeDetail();
+                    // Recharge la page courante (load() bornnera si dernière ligne supprimée)
+                    load();
+                } catch (err) {
+                    alert('Erreur: ' + (err.message || 'inconnue'));
+                }
             });
 
             // ------ Ajout de prospect: helpers ------

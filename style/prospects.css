@@ -149,6 +149,15 @@ body {
 .btn-ghost {
     background: #fff;
 }
+/* Bouton suppression
+   Utilisé par le bouton "Supprimer ce prospect" dans le panneau Détails */
+.btn-danger {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    box-shadow: var(--shadow);
+}
+.btn-danger:hover { filter: brightness(.95); }
 
 .card {
     /* Panneaux blancs avec bord/ombre pour séparer les zones */
