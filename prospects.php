@@ -78,6 +78,14 @@
                 <div style="display:flex; gap:.5rem;">
                     <button id="apply-filter" class="btn btn-primary">Appliquer</button>
                     <button id="reset-filter" class="btn btn-ghost">Réinitialiser</button>
+                    <!--
+                        Bouton "Ajouter un prospect"
+                        - Ouvre le panneau latéral d'ajout (id: add-panel)
+                        - Le panneau contient un formulaire complet (prospect + contacts multiples)
+                        - Soumission: POST JSON vers scripts/prospects_api.php { action: 'create', prospect:{...}, contacts:[...] }
+                        - En cas de succès: ferme le panneau et recharge la liste (page 1)
+                    -->
+                    <button id="btn-add-prospect" class="btn btn-primary" title="Ajouter un prospect">Ajouter un prospect</button>
                 </div>
             </div>
         </section>
@@ -180,6 +188,88 @@
             </dl>
         </div>
     </aside>
+        <!--
+                Panneau latéral d'ajout de prospect (overlay)
+                - Présenté comme le panneau de détails, largeur fixe ~380px
+                - Contient:
+                    * Bloc principal .form-grid (carte blanche) avec les champs du prospect:
+                        Entreprise (requis), Secteur, Adresse, Site web (URL), Statut, Type d'acquisition,
+                        Type 1er contact, Chaleur, Offre prestation, Relancé le (date), Date 1er contact (date),
+                        Chef de projet (ID, requis), Commentaire.
+                    * Section Contacts (zéro, un ou plusieurs) — chaque contact est rendu dans une "contact-row"
+                        verticale avec Nom, Prénom, Email, Téléphone, Poste + bouton supprimer.
+                - Validation minimale côté client: Entreprise + Chef de projet (ID) requis.
+                - Dates envoyées au backend au format natif de l'input: YYYY-MM-DD.
+                - Les listes (ENUM) sont alimentées au moment de l'ouverture du panneau via fillSelect(...).
+        -->
+    <aside id="add-panel" class="detail-panel" aria-hidden="true">
+        <div class="detail-panel-header">
+            <h2 class="detail-panel-title">Ajouter un prospect</h2>
+            <button type="button" id="add-close" class="detail-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="detail-panel-body">
+            <form id="add-form">
+                <div class="form-grid">
+                    <label>Entreprise
+                        <input id="add-entreprise" class="input" type="text" required>
+                    </label>
+                    <label>Secteur
+                        <input id="add-secteur" class="input" type="text">
+                    </label>
+                    <label>Adresse
+                        <input id="add-adresse" class="input" type="text">
+                    </label>
+                    <label>Site web
+                        <input id="add-site" class="input" type="url" placeholder="https://...">
+                    </label>
+                    <label>Statut
+                        <select id="add-status" class="select"></select>
+                    </label>
+                    <label>Type d'acquisition
+                        <select id="add-acq" class="select"></select>
+                    </label>
+                    <label>Type 1er contact
+                        <select id="add-tpc" class="select"></select>
+                    </label>
+                    <label>Chaleur
+                        <select id="add-chaleur" class="select"></select>
+                    </label>
+                    <label>Offre prestation
+                        <select id="add-offre" class="select"></select>
+                    </label>
+                    <label>Relancé le
+                        <input id="add-relance" class="input" type="date">
+                    </label>
+                    <label>Date 1er contact
+                        <input id="add-datepc" class="input" type="date">
+                    </label>
+                    <label>Chef de projet (ID)
+                        <input id="add-chef" class="input" type="number" min="1" required>
+                    </label>
+                    <label>Commentaire
+                        <textarea id="add-comment" class="input" rows="3"></textarea>
+                    </label>
+                </div>
+                <div class="form-section">
+                    <h3>Contacts</h3>
+                    <div class="contacts-head">
+                        <span>Nom</span>
+                        <span>Prénom</span>
+                        <span>Email</span>
+                        <span>Téléphone</span>
+                        <span>Poste</span>
+                        <span></span>
+                    </div>
+                    <div id="contacts-list" class="contacts-list"></div>
+                    <button type="button" id="add-contact" class="btn">Ajouter un contact</button>
+                </div>
+                <div style="margin-top:1rem; display:flex; gap:.5rem;">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" id="add-cancel" class="btn btn-ghost">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </aside>
     
     <script>
         // Script IIFE pour éviter les variables globales et initialiser les listeners.
@@ -203,6 +293,27 @@
             const detailAdresse = document.getElementById('detail-adresse');
             const detailSiteweb = document.getElementById('detail-siteweb');
             const detailCommentaire = document.getElementById('detail-commentaire');
+            // Références panneau ajout
+            const addBtn = document.getElementById('btn-add-prospect');
+            const addPanel = document.getElementById('add-panel');
+            const addClose = document.getElementById('add-close');
+            const addForm = document.getElementById('add-form');
+            const addEntreprise = document.getElementById('add-entreprise');
+            const addSecteur = document.getElementById('add-secteur');
+            const addAdresse = document.getElementById('add-adresse');
+            const addSite = document.getElementById('add-site');
+            const addStatus = document.getElementById('add-status');
+            const addAcq = document.getElementById('add-acq');
+            const addTpc = document.getElementById('add-tpc');
+            const addChaleur = document.getElementById('add-chaleur');
+            const addOffre = document.getElementById('add-offre');
+            const addRelance = document.getElementById('add-relance');
+            const addDatePC = document.getElementById('add-datepc');
+            const addChef = document.getElementById('add-chef');
+            const addComment = document.getElementById('add-comment');
+            const contactsList = document.getElementById('contacts-list');
+            const addContactBtn = document.getElementById('add-contact');
+            const addCancel = document.getElementById('add-cancel');
             
             // Etat interne de la liste (source de vérité pour l'URL de l'API)
             let page = 1;                 // numéro de page en cours (>=1)
@@ -421,6 +532,126 @@
                 const btn = e.target.closest('.btn-detail');
                 if (!btn) return;
                 openDetail(btn.dataset.adresse, btn.dataset.siteweb, btn.dataset.commentaire);
+            });
+
+            // ------ Ajout de prospect: helpers ------
+            /**
+             * Ouvre le panneau d'ajout et prépare l'UI:
+             * - Remplit les <select> d'énumérations (statut, acquisition, etc.)
+             * - Ajoute une première "contact-row" vide si aucune n'existe
+             * - Affiche l'overlay (classe .visible) et active le backdrop via body.detail-panel-open
+             */
+            function openAddPanel(){
+                // peupler les selects ENUM à l'ouverture
+                fillSelect(addStatus, STATUS_OPTIONS, 'Choisir...');
+                fillSelect(addAcq, ACQUISITION_OPTIONS, 'Choisir...');
+                fillSelect(addTpc, TYPE_PREMIER_CONTACT_OPTIONS, 'Choisir...');
+                fillSelect(addChaleur, CHALEUR_OPTIONS, 'Choisir...');
+                fillSelect(addOffre, OFFRE_PRESTATION_OPTIONS, 'Choisir...');
+                // par défaut un bloc contact vide
+                if (!contactsList.children.length) addContactRow();
+                addPanel.setAttribute('aria-hidden','false');
+                addPanel.classList.add('visible');
+                document.body.classList.add('detail-panel-open');
+            }
+            function closeAddPanel(){
+                addPanel.classList.remove('visible');
+                addPanel.setAttribute('aria-hidden','true');
+                document.body.classList.remove('detail-panel-open');
+            }
+            /** Remplit un <select> avec une option placeholder puis les valeurs d'un tableau. */
+            function fillSelect(sel, options, placeholder='Choisir...'){
+                sel.innerHTML = '';
+                const ph = document.createElement('option'); ph.value=''; ph.textContent=placeholder; sel.appendChild(ph);
+                for (const v of options){ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); }
+            }
+            /**
+             * Ajoute un bloc visuel de contact (vertical), champs facultatifs.
+             * values peut pré-remplir {nom, prenom, email, tel, poste}.
+             */
+            function addContactRow(values={}){
+                const wrap = document.createElement('div');
+                wrap.className = 'contact-row';
+                wrap.innerHTML = `
+                    <input class="input" type="text" placeholder="Nom" value="${values.nom||''}">
+                    <input class="input" type="text" placeholder="Prénom" value="${values.prenom||''}">
+                    <input class="input" type="email" placeholder="Email" value="${values.email||''}">
+                    <input class="input" type="tel" placeholder="Téléphone" value="${values.tel||''}">
+                    <input class="input" type="text" placeholder="Poste" value="${values.poste||''}">
+                    <button type="button" class="btn btn-ghost remove-contact" title="Supprimer">✕</button>`;
+                contactsList.appendChild(wrap);
+            }
+            addContactBtn.addEventListener('click', () => addContactRow());
+            contactsList.addEventListener('click', (e)=>{
+                const b = e.target.closest('.remove-contact');
+                if (!b) return;
+                const row = b.parentElement;
+                row.remove();
+            });
+            addBtn.addEventListener('click', openAddPanel);
+            addClose.addEventListener('click', closeAddPanel);
+            addCancel.addEventListener('click', closeAddPanel);
+
+            // Soumission du formulaire d'ajout
+            /**
+             * Construit le payload JSON pour la création et l'envoie au backend:
+             *   { action:'create', prospect:{...}, contacts:[...] }
+             * - Dates: on envoie la valeur brute des <input type="date"> (YYYY-MM-DD)
+             * - Contacts: on ne conserve que les lignes ayant au moins un champ rempli
+             * - Sur succès: fermeture du panneau, reset du formulaire et rechargement de la liste (page 1)
+             */
+            addForm.addEventListener('submit', async (e)=>{
+                e.preventDefault();
+                const contacts = Array.from(contactsList.children).map(row=>{
+                    const [nom, prenom, email, tel, poste] = row.querySelectorAll('input');
+                    return {
+                        nom: nom.value.trim(),
+                        prenom: prenom.value.trim(),
+                        email: email.value.trim(),
+                        tel: tel.value.trim(),
+                        poste: poste.value.trim()
+                    };
+                }).filter(c => c.nom || c.prenom || c.email || c.tel || c.poste);
+
+                const payload = {
+                    action: 'create',
+                    prospect: {
+                        entreprise: addEntreprise.value.trim(),
+                        secteur: addSecteur.value.trim(),
+                        adresse_entreprise: addAdresse.value.trim(),
+                        site_web_entreprise: addSite.value.trim(),
+                        status_prospect: addStatus.value,
+                        type_acquisition: addAcq.value,
+                        type_premier_contact: addTpc.value,
+                        chaleur: addChaleur.value,
+                        offre_prestation: addOffre.value,
+                        relance_le: addRelance.value || null, // YYYY-MM-DD
+                        date_premier_contact: addDatePC.value || null, // YYYY-MM-DD
+                        chef_de_projet_id: addChef.value ? Number(addChef.value) : null,
+                        commentaire: addComment.value.trim()
+                    },
+                    contacts
+                };
+                // validations simples côté front
+                if (!payload.prospect.entreprise){ alert('Entreprise est obligatoire'); return; }
+                if (!payload.prospect.chef_de_projet_id){ alert('Chef de projet (ID) est obligatoire'); return; }
+
+                try {
+                    const res = await fetch('scripts/prospects_api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error || 'Echec de création');
+                    // succès: fermer et rafraîchir
+                    closeAddPanel();
+                    // reset formulaire
+                    addForm.reset(); contactsList.innerHTML = '';
+                    page = 1; load();
+                } catch(err){
+                    alert('Erreur: ' + (err.message||'inconnue'));
+                }
             });
             
             /**

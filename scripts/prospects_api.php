@@ -29,6 +29,138 @@
         exit;
     }
 
+    // Si requête POST: création de prospect
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $input = json_decode(file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable $e) {
+            http_response_code(400);
+            echo json_encode(['success'=>false,'error'=>'JSON invalide']);
+            exit;
+        }
+        $action = $input['action'] ?? '';
+        if ($action !== 'create') {
+            http_response_code(400);
+            echo json_encode(['success'=>false,'error'=>'Action non supportée']);
+            exit;
+        }
+
+        $p = $input['prospect'] ?? [];
+        $contacts = $input['contacts'] ?? [];
+
+        // Normalisation champs (trim)
+        $entreprise = trim($p['entreprise'] ?? '');
+        $secteur = trim($p['secteur'] ?? '');
+        $adresse = trim($p['adresse_entreprise'] ?? '');
+        $site = trim($p['site_web_entreprise'] ?? '');
+        $status = trim($p['status_prospect'] ?? '');
+        $acq = trim($p['type_acquisition'] ?? '');
+        $tpc = trim($p['type_premier_contact'] ?? '');
+        $chaleur = trim($p['chaleur'] ?? '');
+        $offre = trim($p['offre_prestation'] ?? '');
+        $relance = trim($p['relance_le'] ?? ''); // attendu YYYY-MM-DD
+        $datepc = trim($p['date_premier_contact'] ?? ''); // attendu YYYY-MM-DD
+        $chefId = $p['chef_de_projet_id'] ?? null;
+        $comment = trim($p['commentaire'] ?? '');
+
+        if ($entreprise === '') {
+            http_response_code(400);
+            echo json_encode(['success'=>false,'error'=>'Le champ entreprise est requis']);
+            exit;
+        }
+        if (!is_int($chefId)) {
+            http_response_code(400);
+            echo json_encode(['success'=>false,'error'=>'chef_de_projet_id invalide']);
+            exit;
+        }
+
+        // Enums autorisés (doivent être cohérents avec le schéma SQL)
+        $enumStatus = ['A contacter','Contacté','A rappeler','Relancé','RDV','PC','Signé','PC refusée','Perdu'];
+        $enumAcq = ['DE',"Appel d'offre",'Web crawling','Porte à porte','IRL','Fidélisation','BaNCO','Partenariat'];
+        $enumTPC = ['Porte à porte','Formulaire de contact','Event CY Entreprise','LinkedIn','Mail',"Appel d'offre",'DE','Cold call','Salon'];
+        $enumChaleur = ['Froid','Tiède','Chaud'];
+        $enumOffre = ['Informatique','Chimie','Biotechnologies','Génie civil'];
+        $checkEnum = function($v,$list){ return $v==='' || in_array($v,$list,true); };
+        if (!$checkEnum($status,$enumStatus) || !$checkEnum($acq,$enumAcq) || !$checkEnum($tpc,$enumTPC)
+            || !$checkEnum($chaleur,$enumChaleur) || !$checkEnum($offre,$enumOffre)) {
+            http_response_code(400);
+            echo json_encode(['success'=>false,'error'=>'Valeur ENUM invalide']);
+            exit;
+        }
+        $checkDate = function($d){ return $d==='' || preg_match('/^\d{4}-\d{2}-\d{2}$/',$d); };
+        if (!$checkDate($relance) || !$checkDate($datepc)){
+            http_response_code(400);
+            echo json_encode(['success'=>false,'error'=>'Format de date invalide (YYYY-MM-DD)']);
+            exit;
+        }
+
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+
+            // Valide l'existence du chef de projet
+            $chk = $pdo->prepare('SELECT id FROM users WHERE id = ?');
+            $chk->execute([$chefId]);
+            if (!$chk->fetchColumn()) {
+                http_response_code(400);
+                echo json_encode(['success'=>false,'error'=>'Chef de projet inexistant']);
+                exit;
+            }
+
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare('INSERT INTO prospect (
+                entreprise, secteur, adresse_entreprise, site_web_entreprise,
+                status_prospect, type_acquisition, type_premier_contact, chaleur, offre_prestation,
+                relance_le, date_premier_contact, chef_de_projet_id, commentaire
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+            $stmt->execute([
+                $entreprise ?: null,
+                $secteur ?: null,
+                $adresse ?: null,
+                $site ?: null,
+                $status ?: null,
+                $acq ?: null,
+                $tpc ?: null,
+                $chaleur ?: null,
+                $offre ?: null,
+                $relance !== '' ? $relance : null,
+                $datepc !== '' ? $datepc : null,
+                $chefId,
+                $comment ?: null,
+            ]);
+            $newId = (int)$pdo->lastInsertId();
+
+            if (is_array($contacts)){
+                $cins = $pdo->prepare('INSERT INTO contact (prospect_id, nom, prenom, email, tel, poste) VALUES (?,?,?,?,?,?)');
+                foreach ($contacts as $c){
+                    $nom = trim($c['nom'] ?? '');
+                    $prenom = trim($c['prenom'] ?? '');
+                    $email = trim($c['email'] ?? '');
+                    $tel = trim($c['tel'] ?? '');
+                    $poste = trim($c['poste'] ?? '');
+                    if ($nom === '' && $prenom === '' && $email === '' && $tel === '' && $poste === '') continue;
+                    $cins->execute([$newId, $nom ?: null, $prenom ?: null, $email ?: null, $tel ?: null, $poste ?: null]);
+                }
+            }
+            $pdo->commit();
+
+            echo json_encode(['success'=>true,'id'=>$newId]);
+            exit;
+        } catch (Throwable $e) {
+            if (isset($pdo) && $pdo->inTransaction()) { $pdo->rollBack(); }
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
+    }
+
     // read des paramètres de pagination et de recherche
     // page: au minimum 1; si valeur invalide, on retombe sur 1
     $page = max(1, intval($_GET['page'] ?? 1));

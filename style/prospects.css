@@ -241,6 +241,7 @@ body {
     transition: transform .25s ease;
     z-index: 110; /* au-dessus de la nav (100) */
     padding: 0;
+    overflow-x: hidden; /* évite tout débordement horizontal du contenu */
 }
 .detail-panel.visible {
     transform: translateX(0);
@@ -314,6 +315,46 @@ body {
 body.detail-panel-open::after {
     content:'';
     position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:105;
+}
+
+/* Formulaire d'ajout dans le panneau */
+/*
+    Bloc visuel pour l'Ajout de prospect
+    - .form-grid : carte blanche, champs du prospect empilés verticalement
+    - .form-section + .contacts-list/.contact-row : gestion de 0..n contacts
+    - Objectif: lisible dans un panneau étroit (~380px) sans scroll horizontal
+*/
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: .6rem;
+    margin-bottom: .75rem;
+    padding: .75rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    font-weight: 600;
+    font-size: .9rem;
+    color: #374151;
+}
+.form-grid .input,
+.form-grid .select { width: 100%; }
+.form-section h3 { margin:.75rem 0 .5rem; font-size:1rem; font-weight:700; }
+.contacts-list { display:flex; flex-direction:column; gap:.65rem; margin-bottom:.5rem; }
+/* Pour une présentation verticale, on masque l'en-tête colonnes */
+.contacts-head { display:none; }
+/* Les champs d'un contact empilés verticalement pour éviter le débordement */
+.contact-row { display:grid; grid-template-columns: 1fr; gap:.5rem; align-items:start; padding:.5rem; background:#fff; border:1px solid var(--border); border-radius: var(--radius); }
+.contact-row .input { width: 100%; }
+.contact-row .remove-contact { min-width: 2.25rem; justify-self:end; }
+
+@media (max-width: 700px) {
+    .form-grid { grid-template-columns: 1fr; }
 }
 
 
