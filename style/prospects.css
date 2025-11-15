@@ -145,6 +145,70 @@ body {
 .chip-heat-tiede { background:#fff7ed; color:#9a3412; }  /* tiède = orange pâle */
 .chip-heat-chaud { background:#fee2e2; color:#991b1b; }  /* chaud = rouge pâle */
 
+/* Panneau latéral de détails (overlay) */
+.detail-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 380px;
+    background: #eceff1; /* gris clair demandé */
+    box-shadow: -4px 0 16px rgba(0,0,0,0.15);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s ease;
+    z-index: 110; /* au-dessus de la nav (100) */
+    padding: 0;
+}
+.detail-panel.visible { transform: translateX(0); }
+.detail-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .5rem;
+    flex-wrap: nowrap;
+    padding: 1rem 1rem .75rem;
+    border-bottom: 1px solid var(--border);
+}
+.detail-panel-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.detail-close {
+    background: #fff;
+    border: 1px solid var(--border);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #334155;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+}
+.detail-close:hover { background: #f5f7fa; color: var(--bg-accent); }
+.detail-panel-body { padding: .75rem 1rem 1.5rem; overflow-y:auto; }
+.detail-list { margin:0; padding:0; }
+.detail-list dt { font-weight:700; font-size:.85rem; text-transform:uppercase; letter-spacing:.5px; margin-top:.9rem; color:#374151; }
+.detail-list dd { margin: .3rem 0 .2rem; font-size:.9rem; line-height:1.35; word-break:break-word; }
+.detail-list a { color: var(--bg-accent); text-decoration:none; }
+.detail-list a:hover { text-decoration:underline; }
+/* Backdrop quand panneau ouvert */
+body.detail-panel-open::after {
+    content:'';
+    position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:105;
+}
+
 /* Pagination */
 .pagination { display: flex; align-items: center; gap: .5rem; padding: .8rem; justify-content: center; }
 .pagination .btn { min-width: 2.5rem; }

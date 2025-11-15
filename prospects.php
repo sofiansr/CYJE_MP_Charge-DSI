@@ -104,11 +104,12 @@
                             <th>Chaleur</th>
                             <th>Offre prestation</th>
                             <th>Chef de projet</th>
+                            <th>Détails</th>
                         </tr>
                     </thead>
                     <!-- intérieur du tableau (les prospects ligne par ligne) -->
                     <tbody id="tbody">
-                        <tr><td colspan="16" style="text-align:center; padding:1rem; color:var(--text-muted);">Chargement...</td></tr>
+                        <tr><td colspan="17" style="text-align:center; padding:1rem; color:var(--text-muted);">Chargement...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -162,6 +163,23 @@
             </div>
         </footer>
     </main>
+    <!-- Panneau latéral de détails (overlay) masqué par défaut -->
+    <aside id="detail-panel" class="detail-panel" aria-hidden="true" style="position:fixed;top:0;right:0;height:100vh;width:380px;transform:translateX(100%);background:#eceff1;z-index:110;display:flex;flex-direction:column;">
+        <div class="detail-panel-header">
+            <h2 class="detail-panel-title">Détails du prospect</h2>
+            <button type="button" id="detail-close" class="detail-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="detail-panel-body">
+            <dl class="detail-list">
+                <dt>Adresse</dt>
+                <dd id="detail-adresse">—</dd>
+                <dt>Site web</dt>
+                <dd id="detail-siteweb">—</dd>
+                <dt>Commentaire</dt>
+                <dd id="detail-commentaire">—</dd>
+            </dl>
+        </div>
+    </aside>
     
     <script>
         // Script IIFE pour éviter les variables globales et initialiser les listeners.
@@ -179,6 +197,12 @@
             const btnPrev = document.getElementById('prev');          // Bouton pagination: page précédente
             const btnNext = document.getElementById('next');          // Bouton pagination: page suivante
             const pageInfo = document.getElementById('page-info');    // Libellé "Page X / Y"
+            // Références panneau détail
+            const detailPanel = document.getElementById('detail-panel');
+            const detailClose = document.getElementById('detail-close');
+            const detailAdresse = document.getElementById('detail-adresse');
+            const detailSiteweb = document.getElementById('detail-siteweb');
+            const detailCommentaire = document.getElementById('detail-commentaire');
             
             // Etat interne de la liste (source de vérité pour l'URL de l'API)
             let page = 1;                 // numéro de page en cours (>=1)
@@ -302,7 +326,7 @@
                 }
                 
                 // Affiche un état "chargement" dans le tableau (une seule ligne)
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1rem; color:var(--text-muted);">Chargement...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="17" style="text-align:center; padding:1rem; color:var(--text-muted);">Chargement...</td></tr>';
                 try {
                     // Appel à l'API (GET) avec un header informatif
                     const res = await fetch('scripts/prospects_api.php?' + params.toString(), { headers: { 'X-Requested-With': 'fetch' } });
@@ -314,7 +338,7 @@
                     // Rendu des lignes du tableau
                     if (data.data.length === 0) {
                         // Aucun résultat: affiche une ligne vide informative sur 16 colonnes
-                        tbody.innerHTML = '<tr><td colspan="16" style="text-align:center; padding:1rem; color:var(--text-muted);">Aucun prospect</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="17" style="text-align:center; padding:1rem; color:var(--text-muted);">Aucun prospect</td></tr>';
                     } else {
                         // Transforme chaque objet prospect en <tr> avec <td> alignés sur l'en-tête
                         tbody.innerHTML = data.data.map(p => {
@@ -350,6 +374,7 @@
                                     <td>${p.chaleur ? `<span class=\"chip ${heatCls}\">${escapeHtml(p.chaleur)}<\/span>` : ''}</td>
                                     <td>${p.offre_prestation ? escapeHtml(p.offre_prestation) : ''}</td>
                                     <td>${p.chef_projet ? escapeHtml(p.chef_projet) : ''}</td>
+                                    <td><button type="button" class="btn btn-detail" data-id="${p.id}" data-adresse="${p.adresse_entreprise ? escapeAttr(p.adresse_entreprise) : ''}" data-siteweb="${p.site_web_entreprise ? escapeAttr(p.site_web_entreprise) : ''}" data-commentaire="${p.commentaire ? escapeAttr(p.commentaire) : ''}">Détails...</button></td>
                                 </tr>`;}).join('');
                     }
                     
@@ -362,9 +387,41 @@
                     pageInfo.textContent = `Page ${page} / ${totalPages}`; // libellé central
                 } catch (e) {
                     // En cas d'erreur (réseau/JSON/erreur applicative), on informe dans le tableau
-                    tbody.innerHTML = `<tr><td colspan="16" style="color:#c1121f; font-weight:700; text-align:center; padding:1rem;">${escapeHtml(e.message)}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="17" style="color:#c1121f; font-weight:700; text-align:center; padding:1rem;">${escapeHtml(e.message)}</td></tr>`;
                 }
             }
+
+            // Ouvre le panneau de détails avec les données fournies
+            function openDetail(adresse, siteweb, commentaire) {
+                detailAdresse.textContent = adresse || '—';
+                // site web: lien cliquable si présent
+                if (siteweb) {
+                    const safe = escapeHtml(siteweb);
+                    detailSiteweb.innerHTML = `<a href="${escapeAttr(siteweb)}" target="_blank" rel="noopener">${safe}</a>`;
+                } else {
+                    detailSiteweb.textContent = '—';
+                }
+                detailCommentaire.textContent = commentaire || '—';
+                detailPanel.setAttribute('aria-hidden','false');
+                detailPanel.classList.add('visible');
+                // Fallback si CSS non chargé: on force la translation à 0
+                detailPanel.style.transform = 'translateX(0)';
+                document.body.classList.add('detail-panel-open');
+            }
+            function closeDetail(){
+                detailPanel.classList.remove('visible');
+                detailPanel.setAttribute('aria-hidden','true');
+                // Fallback: refermer par translation
+                detailPanel.style.transform = 'translateX(100%)';
+                document.body.classList.remove('detail-panel-open');
+            }
+            detailClose.addEventListener('click', closeDetail);
+            // Event delegation pour les boutons détail
+            tbody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.btn-detail');
+                if (!btn) return;
+                openDetail(btn.dataset.adresse, btn.dataset.siteweb, btn.dataset.commentaire);
+            });
             
             /**
              * Echappe le HTML pour prévenir les injections (XSS) dans le contenu.
