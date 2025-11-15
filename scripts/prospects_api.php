@@ -210,6 +210,29 @@
         }
     }
 
+    // Endpoint GET auxiliaire: liste des utilisateurs (id, nom, prenom)
+    if (($_GET['action'] ?? '') === 'users') {
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            $stmt = $pdo->query('SELECT id, nom, prenom FROM users ORDER BY nom, prenom');
+            $users = $stmt->fetchAll();
+            echo json_encode(['success' => true, 'users' => $users]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Erreur serveur']);
+            exit;
+        }
+    }
+
     // read des paramètres de pagination et de recherche
     // page: au minimum 1; si valeur invalide, on retombe sur 1
     $page = max(1, intval($_GET['page'] ?? 1));

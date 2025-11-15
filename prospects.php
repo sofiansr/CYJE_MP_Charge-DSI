@@ -252,8 +252,10 @@
                     <label>Date 1er contact
                         <input id="add-datepc" class="input" type="date">
                     </label>
-                    <label>Chef de projet (ID)
-                        <input id="add-chef" class="input" type="number" min="1" required>
+                    <label>Chef de projet
+                        <select id="add-chef" class="select" required>
+                            <option value="">Choisir un chef de projet...</option>
+                        </select>
                     </label>
                     <label>Commentaire
                         <textarea id="add-comment" class="input" rows="3"></textarea>

@@ -295,13 +295,21 @@
     * - Ajoute une première "contact-row" vide si aucune n'existe
     * - Affiche l'overlay (classe .visible) et active le backdrop via body.detail-panel-open
     */
-    function openAddPanel() {
+    async function openAddPanel() {
         // peupler les selects ENUM à l'ouverture
         fillSelect(addStatus, STATUS_OPTIONS, 'Choisir...');
         fillSelect(addAcq, ACQUISITION_OPTIONS, 'Choisir...');
         fillSelect(addTpc, TYPE_PREMIER_CONTACT_OPTIONS, 'Choisir...');
         fillSelect(addChaleur, CHALEUR_OPTIONS, 'Choisir...');
         fillSelect(addOffre, OFFRE_PRESTATION_OPTIONS, 'Choisir...');
+        // peupler la liste des chefs de projet
+        try {
+            const users = await loadUsers();
+            const items = users.map(u => ({ value: String(u.id), label: `${u.prenom} ${u.nom}`.trim() }));
+            fillSelectPairs(addChef, items, 'Choisir un chef de projet...');
+        } catch (_) {
+            // en cas d'erreur, on laisse le select avec le placeholder
+        }
         // par défaut un bloc contact vide
         if (!contactsList.children.length) addContactRow();
         addPanel.setAttribute('aria-hidden', 'false');
@@ -318,6 +326,22 @@
         sel.innerHTML = '';
         const ph = document.createElement('option'); ph.value = ''; ph.textContent = placeholder; sel.appendChild(ph);
         for (const v of options) { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); }
+    }
+    // Remplit un <select> avec des paires value/label
+    function fillSelectPairs(sel, items, placeholder = 'Choisir...') {
+        sel.innerHTML = '';
+        const ph = document.createElement('option'); ph.value = ''; ph.textContent = placeholder; sel.appendChild(ph);
+        for (const it of items) { const o = document.createElement('option'); o.value = it.value; o.textContent = it.label; sel.appendChild(o); }
+    }
+    // Cache simple pour la liste des utilisateurs
+    let USERS_CACHE = null;
+    async function loadUsers() {
+        if (USERS_CACHE) return USERS_CACHE;
+        const res = await fetch('scripts/prospects_api.php?action=users', { headers: { 'X-Requested-With': 'fetch' } });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur chargement utilisateurs');
+        USERS_CACHE = Array.isArray(data.users) ? data.users : [];
+        return USERS_CACHE;
     }
     /**
     * Ajoute un bloc visuel de contact (vertical), champs facultatifs.
@@ -388,7 +412,7 @@
         };
         // validations simples côté front
         if (!payload.prospect.entreprise) { alert('Entreprise est obligatoire'); return; }
-        if (!payload.prospect.chef_de_projet_id) { alert('Chef de projet (ID) est obligatoire'); return; }
+        if (!payload.prospect.chef_de_projet_id) { alert('Chef de projet est obligatoire'); return; }
 
         try {
             const res = await fetch('scripts/prospects_api.php', {
