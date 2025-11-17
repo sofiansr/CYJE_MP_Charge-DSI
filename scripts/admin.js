@@ -29,6 +29,7 @@
     const btnEdit = $('#user-edit');
     const btnSave = $('#user-save');
     const btnCancel = $('#user-cancel');
+    const btnDelete = $('#user-delete');
     
     let currentId = null; // ID de l'utilisateur actuellement chargé (null en création)
     let IS_NEW = false;   // Indique si on est en mode création (nouvel utilisateur)
@@ -157,6 +158,36 @@
     btnAdd?.addEventListener('click', () => {
         // Démarre le flux de création d'utilisateur
         startCreate();
+    });
+
+    btnDelete?.addEventListener('click', async () => {
+        // Confirmation avant suppression
+        if (!currentId) return;
+        const ok = confirm('Confirmer la suppression de cet utilisateur ?');
+        if (!ok) return;
+        try {
+            await fetchJSON('scripts/users_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: currentId })
+            });
+            // Retire l'option du select
+            const idx = userSelect.selectedIndex;
+            if (idx >= 0) {
+                userSelect.remove(idx);
+            }
+            // Réinitialise le formulaire
+            currentId = null;
+            IS_NEW = false;
+            prenomEl.value = '';
+            nomEl.value = '';
+            emailEl.value = '';
+            roleEl.value = 'user';
+            setLocked(true);
+            alert('Utilisateur supprimé');
+        } catch (e) {
+            alert(e.message);
+        }
     });
     
     form?.addEventListener('submit', async (ev) => {

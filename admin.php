@@ -106,6 +106,7 @@
                         </label>
                     </div>
                     <div style="margin-top:1rem; display:flex; gap:.5rem; justify-content:flex-end;">
+                        <button type="button" id="user-delete" class="btn btn-danger">Supprimer</button>
                         <button type="button" id="user-edit" class="btn">Modifier</button>
                         <button type="submit" id="user-save" class="btn btn-primary" style="display:none">Enregistrer</button>
                         <button type="button" id="user-cancel" class="btn btn-ghost" style="display:none">Annuler</button>

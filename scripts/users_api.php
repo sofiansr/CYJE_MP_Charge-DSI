@@ -181,6 +181,36 @@
             exit;
         }
 
+        if ($action === 'delete') {
+            // Suppression d'un utilisateur par ID
+            $id = isset($input['id']) ? (int)$input['id'] : 0;
+            if ($id <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ID invalide']);
+                exit;
+            }
+            // Empêche la suppression de son propre compte (sécurité minimale)
+            if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === $id) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Impossible de supprimer votre propre compte']);
+                exit;
+            }
+            try {
+                $stmt = $pdo->prepare('DELETE FROM users WHERE id = ?');
+                $stmt->execute([$id]);
+            } catch (PDOException $e) {
+                // Erreur d'intégrité référentielle probable (FK)
+                if ($e->getCode() === '23000') {
+                    http_response_code(409);
+                    echo json_encode(['success' => false, 'error' => 'Suppression impossible: utilisateur référencé']);
+                    exit;
+                }
+                throw $e;
+            }
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Action inconnue']);
         exit;
