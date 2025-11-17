@@ -166,7 +166,7 @@
             </div>
             <div class="footer-bottom">
                 <div class="footer-container">
-                    <div class="copyright">@CY Junior Engineering | Développé par CY Junior Engineering</div>
+                    <div class="copyright">@CY Junior Engineering</div>
                 </div>
             </div>
         </footer>
