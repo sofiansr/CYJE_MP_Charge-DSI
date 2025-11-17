@@ -20,6 +20,7 @@
     
     const userSelect = $('#user-select');
     const btnReload = $('#reload-users');
+    const btnAdd = $('#user-add');
     const form = $('#user-form');
     const prenomEl = $('#user-prenom');
     const nomEl = $('#user-nom');
@@ -29,12 +30,15 @@
     const btnSave = $('#user-save');
     const btnCancel = $('#user-cancel');
     
-    let currentId = null;
+    let currentId = null; // ID de l'utilisateur actuellement chargé (null en création)
+    let IS_NEW = false;   // Indique si on est en mode création (nouvel utilisateur)
     let LOCKED = true;
     
     function setLocked(locked) {
+        // Bascule le formulaire en lecture seule (locked) ou en édition
         LOCKED = locked;
         [prenomEl, nomEl, emailEl, roleEl].forEach(el => el.disabled = locked);
+        // Affiche/masque les bons boutons selon l'état
         btnEdit.style.display = locked ? '' : 'none';
         btnSave.style.display = locked ? 'none' : '';
         btnCancel.style.display = locked ? 'none' : '';
@@ -59,6 +63,7 @@
     * Récupère la liste des utilisateurs et peuple le select
     */
     async function loadUsers() {
+        // Charge la liste des utilisateurs pour alimenter le <select>
         const data = await fetchJSON('scripts/users_api.php?action=list');
         userSelect.innerHTML = '<option value="">Choisir un utilisateur...</option>';
         data.users.forEach(u => {
@@ -76,6 +81,7 @@
     * Charge les données d'un utilisateur et remplit le formulaire (puis le verrouille)
     */
     async function loadDetail(id) {
+        // Charge le détail d'un utilisateur par son ID et remplit le formulaire
         if (!id) return;
         const data = await fetchJSON(`scripts/users_api.php?action=detail&id=${encodeURIComponent(id)}`);
         const u = data.user;
@@ -86,8 +92,24 @@
         roleEl.value = String(u.role || 'user').toLowerCase();
         setLocked(true);
     }
+
+    // Prépare le formulaire pour création d'un nouvel utilisateur
+    function startCreate() {
+        // Prépare le formulaire pour la création d'un nouvel utilisateur
+        IS_NEW = true;           // active le mode création
+        currentId = null;        // aucun ID tant que non créé côté serveur
+        userSelect.selectedIndex = 0; // réinitialise la sélection
+        // Vide les champs et positionne un rôle par défaut
+        prenomEl.value = '';
+        nomEl.value = '';
+        emailEl.value = '';
+        roleEl.value = 'user';
+        // Passe en mode édition
+        setLocked(false);
+    }
     
     btnReload?.addEventListener('click', async () => {
+        // Recharge la liste des utilisateurs
         try {
             await loadUsers();
         } catch (e) {
@@ -96,55 +118,101 @@
     });
     
     userSelect?.addEventListener('change', async () => {
+        // Sur changement de sélection, charge le détail et sort du mode création
         try {
             const id = userSelect.value ? parseInt(userSelect.value, 10) : null;
             await loadDetail(id);
+            IS_NEW = false;
         } catch (e) {
             alert(e.message);
         }
     });
     
     btnEdit?.addEventListener('click', () => {
+        // Permet d'éditer l'utilisateur actuellement chargé
         if (!currentId) return;
         setLocked(false);
     });
     
     btnCancel?.addEventListener('click', async () => {
+        // Annule les modifications
         try {
-            if (!currentId) return;
+            if (IS_NEW || !currentId) {
+                // En mode création: on réinitialise et on reverrouille
+                prenomEl.value = '';
+                nomEl.value = '';
+                emailEl.value = '';
+                roleEl.value = 'user';
+                setLocked(true);
+                IS_NEW = false;
+                return;
+            }
+            // Sinon: relit l'état serveur de l'utilisateur en cours
             await loadDetail(currentId);
         } catch (e) {
             alert(e.message);
         }
     });
+
+    btnAdd?.addEventListener('click', () => {
+        // Démarre le flux de création d'utilisateur
+        startCreate();
+    });
     
     form?.addEventListener('submit', async (ev) => {
+        // Soumission du formulaire: création si IS_NEW ou currentId null, sinon mise à jour
         ev.preventDefault();
-        if (!currentId) return;
-        const payload = {
-            action: 'update',
-            id: currentId,
-            user: {
-                prenom: prenomEl.value.trim(),
-                nom: nomEl.value.trim(),
-                email: emailEl.value.trim(),
-                role: roleEl.value,
-            }
-        };
+        const isCreate = !currentId || IS_NEW;
+        const payload = isCreate
+            ? {
+                    action: 'create',
+                    user: {
+                        prenom: prenomEl.value.trim(),
+                        nom: nomEl.value.trim(),
+                        email: emailEl.value.trim(),
+                        role: roleEl.value,
+                    }
+                }
+            : {
+                    action: 'update',
+                    id: currentId,
+                    user: {
+                        prenom: prenomEl.value.trim(),
+                        nom: nomEl.value.trim(),
+                        email: emailEl.value.trim(),
+                        role: roleEl.value,
+                    }
+                };
         try {
-            await fetchJSON('scripts/users_api.php', {
+            const resp = await fetchJSON('scripts/users_api.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             setLocked(true);
-            // Rafraîchir l'étiquette dans la liste pour refléter un éventuel changement de nom/role
-            const selIdx = userSelect.selectedIndex;
-            if (selIdx > 0) {
+            if (isCreate) {
+                // Après création: ajoute la nouvelle option dans le select et la sélectionne
+                const newId = resp.id;
                 const label = [payload.user.prenom, payload.user.nom].filter(Boolean).join(' ');
-                userSelect.options[selIdx].textContent = (label ? label : payload.user.email) + ` (${String(payload.user.role).toUpperCase()})`;
+                const opt = document.createElement('option');
+                const roleUp = String(payload.user.role).toUpperCase();
+                opt.value = String(newId);
+                opt.textContent = (label ? label : payload.user.email) + ` (${roleUp})`;
+                userSelect.appendChild(opt);
+                userSelect.value = String(newId);
+                currentId = newId;
+                IS_NEW = false;
+                // Affiche le mot de passe temporaire si retourné par l'API
+                alert(resp.temp_password ? `Utilisateur créé. Mot de passe temporaire: ${resp.temp_password}` : 'Utilisateur créé.');
+            } else {
+                // Après mise à jour: rafraîchit l'étiquette dans la liste si nécessaire
+                const selIdx = userSelect.selectedIndex;
+                if (selIdx > 0) {
+                    const label = [payload.user.prenom, payload.user.nom].filter(Boolean).join(' ');
+                    userSelect.options[selIdx].textContent = (label ? label : payload.user.email) + ` (${String(payload.user.role).toUpperCase()})`;
+                }
+                alert('Utilisateur mis à jour avec succès');
             }
-            alert('Utilisateur mis à jour avec succès');
         } catch (e) {
             alert(e.message);
         }

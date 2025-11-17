@@ -1,25 +1,25 @@
 <?php
     /**
-     * API admin
-     * -------------------------------------------------------------
-     * Accès: réservé aux sessions admin (\$_SESSION['user_role'] === 'admin')
-     * Objet: fournir les endpoints nécessaires à la page admin pour lister,
-     *        consulter et modifier des utilisateurs
-     *
-     * Endpoints:
-     * - GET  users_api.php?action=list
-     *     Réponse: { success:true, users:[ { id, prenom, nom, email, role } ] }
-     *
-     * - GET  users_api.php?action=detail&id=<id>
-     *     Réponse: { success:true, user:{ id, prenom, nom, email, role } }
-     *     Codes: 400 si id invalide, 404 si introuvable
-     *
-     * - POST users_api.php (JSON): { action:'update', id:number, user:{ prenom, nom, email, role } }
-     *     Réponse: { success:true }
-     *     Validations: champs requis, email valide, role ∈ { 'admin','user' }
-     *
-     * Les erreurs renvoient un code HTTP (400/403/404/405/500) et { success:false, error }.
-     */
+    * API admin
+    * -------------------------------------------------------------
+    * Accès: réservé aux sessions admin (\$_SESSION['user_role'] === 'admin')
+    * Objet: fournir les endpoints nécessaires à la page admin pour lister,
+    *        consulter et modifier des utilisateurs
+    *
+    * Endpoints:
+    * - GET  users_api.php?action=list
+    *     Réponse: { success:true, users:[ { id, prenom, nom, email, role } ] }
+    *
+    * - GET  users_api.php?action=detail&id=<id>
+    *     Réponse: { success:true, user:{ id, prenom, nom, email, role } }
+    *     Codes: 400 si id invalide, 404 si introuvable
+    *
+    * - POST users_api.php (JSON): { action:'update', id:number, user:{ prenom, nom, email, role } }
+    *     Réponse: { success:true }
+    *     Validations: champs requis, email valide, role ∈ { 'admin','user' }
+    *
+    * Les erreurs renvoient un code HTTP (400/403/404/405/500) et { success:false, error }.
+    */
     session_start();
     header('Content-Type: application/json; charset=utf-8');
 
@@ -80,51 +80,109 @@
         exit;
     }
 
-    // POST: update
+    // POST: create/update
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Récupère le corps JSON et l'action demandée
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $action = $input['action'] ?? '';
 
-        if ($action !== 'update') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Action inconnue']);
+        if ($action === 'create') {
+            // Extraction et normalisation des champs utilisateur
+            $u = $input['user'] ?? [];
+            $prenom = trim((string)($u['prenom'] ?? ''));
+            $nom = trim((string)($u['nom'] ?? ''));
+            $email = trim((string)($u['email'] ?? ''));
+            $role = trim((string)($u['role'] ?? ''));
+
+            // Validations de base: champs requis
+            if ($prenom === '' || $nom === '' || $email === '' || $role === '') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Champs requis manquants']);
+                exit;
+            }
+            // Validation de l'email
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Email invalide']);
+                exit;
+            }
+            // Validation du rôle
+            if (!in_array($role, ['admin', 'user'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Rôle invalide']);
+                exit;
+            }
+
+            // Vérifie l'unicité de l'email (empêche les doublons)
+            $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Email déjà utilisé']);
+                exit;
+            }
+
+            // Génère un mot de passe temporaire
+            $tempPassword = bin2hex(random_bytes(6)); // 12 caractères hexadécimaux
+
+            // Insertion du nouvel utilisateur
+            $stmt = $pdo->prepare('INSERT INTO users (prenom, nom, email, role, password) VALUES (?, ?, ?, ?, ?)');
+            $stmt->execute([$prenom, $nom, $email, $role, $tempPassword]);
+            $newId = (int)$pdo->lastInsertId(); // Récupère l'ID auto-incrémenté
+
+            // Retourne l'ID et le mot de passe temporaire au client (admin.js l'affichera)
+            echo json_encode(['success' => true, 'id' => $newId, 'temp_password' => $tempPassword]);
             exit;
         }
 
-        $id = isset($input['id']) ? (int)$input['id'] : 0;
-        $u = $input['user'] ?? [];
+        if ($action === 'update') {
+            // Récupération de l'ID et des champs à mettre à jour
+            $id = isset($input['id']) ? (int)$input['id'] : 0;
+            $u = $input['user'] ?? [];
 
-        if ($id <= 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'ID invalide']);
+            // ID requis et valide
+            if ($id <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'ID invalide']);
+                exit;
+            }
+
+            // Normalisation des champs
+            $prenom = trim((string)($u['prenom'] ?? ''));
+            $nom = trim((string)($u['nom'] ?? ''));
+            $email = trim((string)($u['email'] ?? ''));
+            $role = trim((string)($u['role'] ?? ''));
+
+            // Validations de base
+            if ($prenom === '' || $nom === '' || $email === '' || $role === '') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Champs requis manquants']);
+                exit;
+            }
+            // Email valide
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Email invalide']);
+                exit;
+            }
+            // Rôle valide
+            if (!in_array($role, ['admin', 'user'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Rôle invalide']);
+                exit;
+            }
+
+            // Mise à jour des champs
+            $stmt = $pdo->prepare('UPDATE users SET prenom = ?, nom = ?, email = ?, role = ? WHERE id = ?');
+            $stmt->execute([$prenom, $nom, $email, $role, $id]);
+
+            // Accusé de réception
+            echo json_encode(['success' => true]);
             exit;
         }
 
-        $prenom = trim((string)($u['prenom'] ?? ''));
-        $nom = trim((string)($u['nom'] ?? ''));
-        $email = trim((string)($u['email'] ?? ''));
-        $role = trim((string)($u['role'] ?? ''));
-
-        if ($prenom === '' || $nom === '' || $email === '' || $role === '') {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Champs requis manquants']);
-            exit;
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Email invalide']);
-            exit;
-        }
-        if (!in_array($role, ['admin', 'user'], true)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Rôle invalide']);
-            exit;
-        }
-
-        $stmt = $pdo->prepare('UPDATE users SET prenom = ?, nom = ?, email = ?, role = ? WHERE id = ?');
-        $stmt->execute([$prenom, $nom, $email, $role, $id]);
-
-        echo json_encode(['success' => true]);
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Action inconnue']);
         exit;
     }
 
