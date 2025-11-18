@@ -31,7 +31,7 @@
                 <ul class="nav-links">
                     <li><a href="dashboard.php">Tableau de bord</a></li>
                     <li><a href="prospects.php" class="active">Recherche de prospects</a></li>
-                    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'ADMIN'): ?>
                         <li><a href="admin.php">Page administrateur</a></li>
                     <?php endif; ?>
                     <li><a href="scripts/logout.php">Se déconnecter</a></li>
