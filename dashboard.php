@@ -15,24 +15,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style/prospects.css">
-    <style>
-        /* Centrage de la card au milieu de la vue */
-        .center-wrap { min-height: calc(100vh - 170px); display:flex; align-items:center; justify-content:center; }
-        .stat-card { width: min(920px, 92vw); min-height: 320px; display:flex; align-items:center; justify-content:center; }
-    </style>
+    <link rel="stylesheet" href="style/dashboard.css">
     <script>document.documentElement.classList.add('js-enabled');</script>
 </head>
 <body>
     <nav class="app-nav">
         <div class="nav-inner">
             <div class="nav-left">
-                <a href="home.php" aria-label="Accueil">
+                <a href="dashboard.php" aria-label="Accueil">
                     <img src="assets/logo_cyje.png" class="nav-logo" alt="Logo CYJE">
                 </a>
             </div>
             <div class="nav-center">
                 <ul class="nav-links">
-                    <li><a href="home.php" class="active">Tableau de bord</a></li>
+                    <li><a href="dashboard.php" class="active">Tableau de bord</a></li>
                     <li><a href="prospects.php">Recherche de prospects</a></li>
                     <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                         <li><a href="admin.php">Page administrateur</a></li>
@@ -47,7 +43,19 @@
     <main class="page">
         <h1>Tableau de bord</h1>
         <div class="center-wrap">
-            <section class="card stat-card" aria-label="Carte statistiques"></section>
+            <section class="card stat-card" aria-label="Carte statistiques">
+                <div class="subcards-grid" id="stats-grid">
+                    <!-- Sous-carte statistique: nombre total de prospects -->
+                    <div class="subcard stat" id="subcard-total-prospects">
+                        <div class="stat-inner">
+                            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem;">
+                                <p class="stat-number" id="total-prospects-value">--</p>
+                                <p class="stat-label">Prospects total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
 
 
