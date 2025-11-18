@@ -32,7 +32,7 @@
     }
 
     function fetchTotalProspects() {
-        fetch('scripts/stats_api.php?action=prospects_total', { credentials: 'same-origin' })
+        fetch('scripts/dashboard_api.php?action=prospects_total', { credentials: 'same-origin' })
             .then(r => r.json())
             .then(json => {
                 if (json && json.success) {
@@ -44,7 +44,44 @@
             .catch(() => renderTotalProspects(0));
     }
 
+    function fetchProspectsContactesMois() {
+        fetch('scripts/dashboard_api.php?action=prospects_contactes_mois', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(json => {
+                const el = document.getElementById('prospects-contactes-mois-value');
+                if (el) {
+                    el.textContent = (json && json.success) ? (json.total || 0) : '0';
+                }
+            })
+            .catch(() => {
+                const el = document.getElementById('prospects-contactes-mois-value');
+                if (el) el.textContent = '0';
+            });
+    }
+
+    function fetchProspectsContacteParUser() {
+        fetch('scripts/dashboard_api.php?action=prospects_contacte_par_user', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(json => {
+                const el = document.getElementById('prospects-contacte-par-user-value');
+                if (el) {
+                    if (json && json.success) {
+                        el.textContent = json.value.toString();
+                        el.title = `Prospects contacté: ${json.prospects_contacte} / Utilisateurs: ${json.users_total}`;
+                    } else {
+                        el.textContent = '0';
+                    }
+                }
+            })
+            .catch(() => {
+                const el = document.getElementById('prospects-contacte-par-user-value');
+                if (el) el.textContent = '0';
+            });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         fetchTotalProspects();
+        fetchProspectsContactesMois();
+        fetchProspectsContacteParUser();
     });
 })();

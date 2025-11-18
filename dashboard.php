@@ -30,7 +30,7 @@
                     <ul class="nav-links">
                         <li><a href="dashboard.php" class="active">Tableau de bord</a></li>
                         <li><a href="prospects.php">Recherche de prospects</a></li>
-                        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'ADMIN'): ?>
                             <li><a href="admin.php">Page administrateur</a></li>
                         <?php endif; ?>
                         <li><a href="scripts/logout.php">Se déconnecter</a></li>
@@ -46,14 +46,24 @@
                 <section class="card stat-card" aria-label="Carte statistiques">
                     <div class="subcards-grid" id="stats-grid">
                         <!-- Sous-carte statistique: nombre total de prospects -->
-                        <div class="subcard stat" id="subcard-total-prospects">
-                            <div class="stat-inner">
-                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem;">
+                            <div class="subcard stat" id="subcard-total-prospects">
+                                <div class="stat-inner">
                                     <p class="stat-number" id="total-prospects-value">--</p>
                                     <p class="stat-label">Prospects total</p>
                                 </div>
                             </div>
-                        </div>
+                            <div class="subcard stat" id="subcard-prospects-contactes-mois">
+                                <div class="stat-inner">
+                                    <p class="stat-number" id="prospects-contactes-mois-value">--</p>
+                                    <p class="stat-label">Prospects contactés ce mois</p>
+                                </div>
+                            </div>
+                            <div class="subcard stat" id="subcard-prospects-contacte-par-user">
+                                <div class="stat-inner">
+                                    <p class="stat-number" id="prospects-contacte-par-user-value">--</p>
+                                    <p class="stat-label">Prospects contacté / utilisateur en moyenne</p>
+                                </div>
+                            </div>
                     </div>
                 </section>
             </div>
