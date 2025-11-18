@@ -55,5 +55,5 @@
     $_SESSION['user_nom'] = $user['nom'] ?? '';
     $_SESSION['user_prenom'] = $user['prenom'] ?? '';
 
-    echo json_encode(['success' => true, 'redirect' => 'home.html']);
+    echo json_encode(['success' => true, 'redirect' => 'dashboard.php']);
 ?>
