@@ -80,6 +80,14 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="subcard chart" id="subcard-offre">
+                                <div class="chart-inner">
+                                    <p class="subcard-title">Offre prestation</p>
+                                    <div class="chart-wrapper">
+                                        <canvas id="chart-offre" aria-label="Répartition par offre de prestation" role="img"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                     </div>
                 </section>
             </div>

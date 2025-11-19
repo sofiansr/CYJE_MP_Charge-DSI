@@ -154,6 +154,35 @@
             echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
             exit;
         }
+    } elseif ($action === 'offre_distribution') {
+        // Distribution par offre de prestation
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            $order = ['Informatique','Chimie','Biotechnologies','Génie civil'];
+            $base = array_fill_keys($order, 0);
+            $stmt = $pdo->query("SELECT offre_prestation AS off, COUNT(*) AS c FROM prospect WHERE offre_prestation IS NOT NULL GROUP BY offre_prestation");
+            $rows = $stmt->fetchAll();
+            $total = 0;
+            foreach ($rows as $r) {
+                $off = $r['off'];
+                $count = (int)$r['c'];
+                if (isset($base[$off])) { $base[$off] = $count; $total += $count; }
+            }
+            echo json_encode(['success'=>true,'distribution'=>$base,'total'=>$total]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
     }
 
     http_response_code(400);

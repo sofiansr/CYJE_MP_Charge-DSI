@@ -176,11 +176,97 @@
             .catch(() => {});
     }
 
+    function fetchOffreDistribution() {
+        // Récupère la balise <canvas> qui accueillera le graphique (camembert des offres)
+        const cvs = document.getElementById('chart-offre');
+        // Si le canvas n'existe pas dans le DOM, on quitte sans faire la requête
+        if (!cvs) return;
+        // Appel de l'endpoint backend pour obtenir la distribution des offres
+        fetch('scripts/dashboard_api.php?action=offre_distribution', { credentials: 'same-origin' })
+            // Convertit la réponse HTTP en JSON
+            .then(r => r.json())
+            // Traite le JSON retourné
+            .then(json => {
+                // Vérifie la structure attendue (succès). Si échec, on ne trace pas de graphique
+                if (!json || !json.success) return;
+                // Objet de distribution retourné (clef = offre, valeur = nombre); on fournit des valeurs par défaut si absent
+                const dist = json.distribution || { Informatique:0, Chimie:0, Biotechnologies:0, 'Génie civil':0 };
+                // Total des entrées (utilisé pour calculer les pourcentages dans les tooltips)
+                const total = json.total || 0;
+                // Ordre fixe des libellés pour garantir stabilité visuelle du graphique
+                const labels = ['Informatique','Chimie','Biotechnologies','Génie civil'];
+                // Tableau des valeurs (compte par offre) en respectant l'ordre des labels
+                const dataVals = labels.map(l => dist[l] || 0);
+                // Palette de couleurs
+                const colors = ['#0d47a1','#10b981','#8b5cf6','#f59e0b'];
+                // Vérifie que Chart.js est bien chargé
+                if (window.Chart) {
+                    // Instancie un nouveau graphique Chart.js associé au canvas
+                    new Chart(cvs, {
+                        // type: détermine le type de graphique
+                        type: 'doughnut',
+                        // data: ensemble des données et libellés utilisés par le rendu
+                        data: {
+                            // labels: tableau de chaînes affichées dans la légende et associées aux segments
+                            labels,
+                            // datasets: liste de jeux de données
+                            datasets: [{
+                                // data: valeurs numériques pour chaque segment (correspond à labels par index)
+                                data: dataVals,
+                                // backgroundColor: couleur de remplissage des segments
+                                backgroundColor: colors,
+                                // borderWidth: épaisseur de la bordure
+                                borderWidth: 0,
+                                // hoverOffset: déplacement du segment au survol pour feedback visuel
+                                hoverOffset: 6
+                            }]
+                        },
+                        // options: configuration fine (plugins, interaction, apparence)
+                        options: {
+                            // plugins: réglages spécifiques aux plugins intégrés (légende, tooltip, etc.)
+                            plugins: {
+                                // legend: configuration de la légende du graphique
+                                legend: {
+                                    // position: placement de la legende
+                                    position:'bottom',
+                                    // labels: style des libellés de légende
+                                    labels:{
+                                        // font: personnalisation de la police 
+                                        font:{ family:'Barlow Semi Condensed' }
+                                    }
+                                },
+                                // tooltip: info-bulle affichée au survol d'un segment
+                                tooltip: {
+                                    // callbacks: fonctions permettant de personnaliser le contenu des tooltips
+                                    callbacks: {
+                                        // label: retourne le texte affiché pour un segment survolé
+                                        label: ctx => {
+                                            // ctx.parsed = valeur numérique du segment
+                                            const val = ctx.parsed;
+                                            // Calcul pourcentage (val/total * 100) avec protection si total=0
+                                            const pct = total>0 ? ((val/total)*100).toFixed(1) : '0.0';
+                                            // Chaîne finale: "Libellé: valeur (xx.x%)"
+                                            return `${ctx.label}: ${val} (${pct}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            // cutout: taille du trou central (exprimé en pourcentage ou pixels) => style "donut"
+                            cutout: '15%'
+                        }
+                    });
+                }
+            })
+            // Gestion silencieuse des erreurs réseau/JSON (on ne bloque pas l'affichage global du dashboard)
+            .catch(() => {});
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         fetchTotalProspects();
         fetchProspectsContactesMois();
         fetchProspectsContacteParUser();
         fetchChaleurDistribution();
         fetchTPCDistribution();
+        fetchOffreDistribution();
     });
 })();
