@@ -141,3 +141,10 @@
     width: 180px !important;
     height: 180px !important;
 }
+
+/* Variante large pour graphiques en barres */
+.chart-wrapper--wide {
+    width: min(640px, 100%);
+    height: 240px;
+}
+.chart-wrapper--wide canvas { width: 100% !important; height: 240px !important; }

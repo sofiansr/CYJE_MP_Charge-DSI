@@ -123,10 +123,64 @@
             .catch(() => {});
     }
 
+    function fetchTPCDistribution() {
+        const cvs = document.getElementById('chart-tpc');
+        if (!cvs) return;
+        fetch('scripts/dashboard_api.php?action=tpc_distribution', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(json => {
+                if (!json || !json.success) return;
+                const labels = json.labels || [];
+                const counts = json.counts || [];
+                const total = json.total || 0;
+                if (window.Chart) {
+                    new Chart(cvs, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Nombre',
+                                data: counts,
+                                backgroundColor: '#0d47a1',
+                                borderRadius: 6,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => {
+                                            const val = ctx.parsed.y;
+                                            const pct = total>0 ? ((val/total)*100).toFixed(1) : '0.0';
+                                            return `${val} (${pct}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { font: { family: 'Barlow Semi Condensed' } },
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 },
+                                }
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(() => {});
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         fetchTotalProspects();
         fetchProspectsContactesMois();
         fetchProspectsContacteParUser();
         fetchChaleurDistribution();
+        fetchTPCDistribution();
     });
 })();

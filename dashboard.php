@@ -64,6 +64,14 @@
                                     <p class="stat-label">Prospects contacté / utilisateur en moyenne</p>
                                 </div>
                             </div>
+                            <div class="subcard chart" id="subcard-tpc">
+                                <div class="chart-inner">
+                                    <p class="subcard-title">Type 1er contact</p>
+                                    <div class="chart-wrapper chart-wrapper--wide">
+                                        <canvas id="chart-tpc" aria-label="Répartition par type de premier contact" role="img"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="subcard chart" id="subcard-chaleur">
                                 <div class="chart-inner">
                                     <p class="subcard-title">Répartition chaleur</p>

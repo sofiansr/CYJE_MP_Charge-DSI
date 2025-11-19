@@ -114,6 +114,46 @@
             echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
             exit;
         }
+    } elseif ($action === 'tpc_distribution') {
+        // Distribution par type de premier contact (bar chart)
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            $order = [
+                'Porte à porte',
+                'Formulaire de contact',
+                'Event CY Entreprise',
+                'LinkedIn',
+                'Mail',
+                "Appel d'offre",
+                'DE',
+                'Cold call',
+                'Salon'
+            ];
+            $base = array_fill_keys($order, 0);
+            $stmt = $pdo->query("SELECT type_premier_contact AS tpc, COUNT(*) AS c FROM prospect WHERE type_premier_contact IS NOT NULL GROUP BY type_premier_contact");
+            $rows = $stmt->fetchAll();
+            $total = 0;
+            foreach ($rows as $r) {
+                $tpc = $r['tpc'];   // nom du type premier contact
+                $count = (int)$r['c'];  // nombre de ce type de premier contact
+                if (isset($base[$tpc])) { $base[$tpc] = $count; }
+                $total += $count;
+            }
+            echo json_encode(['success'=>true,'labels'=>array_keys($base),'counts'=>array_values($base),'total'=>$total]); // noms, valeurs, total
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
     }
 
     http_response_code(400);
