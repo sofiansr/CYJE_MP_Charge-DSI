@@ -256,6 +256,40 @@
             echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
             exit;
         }
+    } elseif ($action === 'last_contacted') {
+        // Retourne les 5 derniers prospects contactés (date_premier_contact non NULL) triés par date_premier_contact DESC
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            // $sql = "SELECT entreprise, status_prospect, offre_prestation, relance_le, date_premier_contact FROM prospect WHERE date_premier_contact IS NOT NULL ORDER BY date_premier_contact DESC LIMIT 5";
+            $sql = "SELECT entreprise, status_prospect, offre_prestation, relance_le, date_premier_contact FROM prospect WHERE relance_le IS NOT NULL ORDER BY relance_le DESC LIMIT 5";
+            $stmt = $pdo->query($sql);
+            $rows = $stmt->fetchAll();
+            // Normalise valeurs nulles -> chaîne vide
+            $normalized = [];
+            foreach ($rows as $r) {
+                $normalized[] = [
+                    'entreprise' => $r['entreprise'] ?? '',
+                    'status_prospect' => $r['status_prospect'] ?? '',
+                    'offre_prestation' => $r['offre_prestation'] ?? '',
+                    'relance_le' => $r['relance_le'] ?? '',
+                    'date_premier_contact' => $r['date_premier_contact'] ?? ''
+                ];
+            }
+            echo json_encode(['success'=>true,'items'=>$normalized]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
     }
 
     http_response_code(400);

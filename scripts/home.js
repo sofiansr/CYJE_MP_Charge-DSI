@@ -330,6 +330,52 @@
             .catch(() => {});
     }
 
+    function fetchLastContacted() {
+        // Récupère la référence du tableau où seront injectées les lignes
+        const table = document.getElementById('last-contacted-table');
+        // Si la table n'existe pas (carte non rendue), on arrête la fonction
+        if (!table) return;
+        // Récupère le <tbody> du tableau (zone où l'on met les données dynamiques)
+        const tbody = table.querySelector('tbody');
+        // Sécurité: si pas de <tbody>, on stop
+        if (!tbody) return;
+        // Lance la requête HTTP vers l'endpoint last_contacted
+        fetch('scripts/dashboard_api.php?action=last_contacted', { credentials: 'same-origin' })
+            // Convertit la réponse brute en JSON
+            .then(r => r.json())
+            // Traite l'objet JSON reçu
+            .then(json => {
+                // Si la structure n'est pas celle attendue ou success = false, on affiche un message
+                if (!json || !json.success) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#dc2626;">Erreur de chargement</td></tr>';
+                    return;
+                }
+                // Récupère le tableau d'items (0..5 éléments)
+                const items = Array.isArray(json.items) ? json.items : [];
+                // Si aucun prospect, affiche une ligne vide informative
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b;">Aucun prospect contacté</td></tr>';
+                    return;
+                }
+                // Construit le HTML des lignes en mappant chaque item vers un <tr>
+                const rowsHtml = items.map(item => {
+                    // Normalise les champs (évite undefined) et échappe minimalement les valeurs
+                    const entreprise = (item.entreprise || '').replace(/</g,'&lt;');
+                    const status = (item.status_prospect || '').replace(/</g,'&lt;');
+                    const offre = (item.offre_prestation || '').replace(/</g,'&lt;');
+                    const relance = (item.relance_le || '') || ''; // peut être vide
+                    // Retourne une ligne de tableau avec les cellules demandées
+                    return `<tr><td>${entreprise}</td><td>${status}</td><td>${offre}</td><td>${relance}</td></tr>`;
+                }).join('');
+                // Injecte toutes les lignes dans le <tbody>
+                tbody.innerHTML = rowsHtml;
+            })
+            // Gestion des erreurs 
+            .catch(() => {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#dc2626;">Erreur réseau</td></tr>';
+            });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         fetchTotalProspects();
         fetchProspectsContactesMois();
@@ -339,5 +385,6 @@
         fetchOffreDistribution();
         fetchConversionRate();
         fetchStatusDistribution();
+        fetchLastContacted();
     });
 })();

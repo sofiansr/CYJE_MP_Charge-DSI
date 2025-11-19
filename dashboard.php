@@ -102,6 +102,26 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="subcard" id="subcard-last-contacted">
+                                <div class="chart-inner" style="align-items:stretch;">
+                                    <p class="subcard-title">5 derniers prospects contactés</p>
+                                    <div class="table-wrapper">
+                                        <table class="mini-table" id="last-contacted-table" aria-label="5 derniers prospects contactés">
+                                            <thead>
+                                                <tr>
+                                                    <th>Entreprise</th>
+                                                    <th>Status</th>
+                                                    <th>Offre</th>
+                                                    <th>Relancé le</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td colspan="4" style="text-align:center; font-size:.85rem; color:#64748b;">Chargement...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                     </div>
                 </section>
             </div>
