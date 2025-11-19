@@ -64,6 +64,14 @@
                                     <p class="stat-label">Prospects contacté / utilisateur en moyenne</p>
                                 </div>
                             </div>
+                            <div class="subcard chart" id="subcard-chaleur">
+                                <div class="chart-inner">
+                                    <p class="subcard-title">Répartition chaleur</p>
+                                    <div class="chart-wrapper">
+                                        <canvas id="chart-chaleur" aria-label="Répartition Froid / Tiède / Chaud" role="img"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                     </div>
                 </section>
             </div>
@@ -111,6 +119,7 @@
             </footer>
         </main>
 
+        <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
         <script src="scripts/home.js"></script>
     </body>
 </html>

@@ -79,9 +79,54 @@
             });
     }
 
+    function fetchChaleurDistribution() {
+        const cvs = document.getElementById('chart-chaleur');
+        if (!cvs) return;
+        fetch('scripts/dashboard_api.php?action=chaleur_distribution', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(json => {
+                if (!json || !json.success) return;
+                const dist = json.distribution || { Froid:0, Tiède:0, Chaud:0 };
+                const total = json.total || 0;
+                const dataVals = [dist['Froid'], dist['Tiède'], dist['Chaud']];
+                const labels = ['Froid','Tiède','Chaud'];
+                const bgColors = ['#38bdf8','#fb923c','#f87171'];
+                if (window.Chart) {
+                    new Chart(cvs, {
+                        type: 'doughnut',
+                        data: {
+                            labels,
+                            datasets: [{
+                                data: dataVals,
+                                backgroundColor: bgColors,
+                                borderWidth: 0,
+                                hoverOffset: 6
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: { position: 'bottom', labels:{ font:{ family: 'Barlow Semi Condensed' } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => {
+                                            const val = ctx.parsed; const pct = total>0 ? ((val/total)*100).toFixed(1) : '0.0';
+                                            return `${ctx.label}: ${val} (${pct}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            cutout: '55%'
+                        }
+                    });
+                }
+            })
+            .catch(() => {});
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         fetchTotalProspects();
         fetchProspectsContactesMois();
         fetchProspectsContacteParUser();
+        fetchChaleurDistribution();
     });
 })();

@@ -86,6 +86,34 @@
             echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
             exit;
         }
+    } elseif ($action === 'chaleur_distribution') {
+        // Distribution des prospects par chaleur (Froid/Tiède/Chaud)
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            $stmt = $pdo->query("SELECT chaleur, COUNT(*) AS c FROM prospect WHERE chaleur IN ('Froid','Tiède','Chaud') GROUP BY chaleur");
+            $rows = $stmt->fetchAll();
+            $dist = ['Froid'=>0,'Tiède'=>0,'Chaud'=>0];
+            $total = 0;
+            foreach($rows as $r){
+                $val = $r['chaleur'];
+                $count = (int)$r['c'];
+                if(isset($dist[$val])){ $dist[$val] = $count; $total += $count; }
+            }
+            echo json_encode(['success'=>true,'distribution'=>$dist,'total'=>$total]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
     }
 
     http_response_code(400);
