@@ -261,6 +261,22 @@
             .catch(() => {});
     }
 
+    function fetchConversionRate() {
+        const el = document.getElementById('conversion-rate-value');
+        if (!el) return;
+        fetch('scripts/dashboard_api.php?action=conversion_rate', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(json => {
+                if (json && json.success) {
+                    el.textContent = json.rate_percent + '%';
+                    el.title = `Signés: ${json.signed_prospects} / Total: ${json.total_prospects}`;
+                } else {
+                    el.textContent = '0%';
+                }
+            })
+            .catch(() => { if (el) el.textContent = '0%'; });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         fetchTotalProspects();
         fetchProspectsContactesMois();
@@ -268,5 +284,6 @@
         fetchChaleurDistribution();
         fetchTPCDistribution();
         fetchOffreDistribution();
+        fetchConversionRate();
     });
 })();

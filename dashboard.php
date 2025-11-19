@@ -88,6 +88,12 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="subcard stat" id="subcard-conversion">
+                                <div class="stat-inner">
+                                    <p class="stat-number" id="conversion-rate-value">--%</p>
+                                    <p class="stat-label">Taux de conversion</p>
+                                </div>
+                            </div>
                     </div>
                 </section>
             </div>

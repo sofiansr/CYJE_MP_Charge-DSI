@@ -183,6 +183,34 @@
             echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
             exit;
         }
+    } elseif ($action === 'conversion_rate') {
+        // Taux de conversion = prospects signés / total prospects
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            $total = (int)$pdo->query('SELECT COUNT(*) FROM prospect')->fetchColumn();
+            $signed = (int)$pdo->query("SELECT COUNT(*) FROM prospect WHERE status_prospect='Signé'")->fetchColumn();
+            $rate = $total > 0 ? ($signed / $total) : 0; // ratio 0..1
+            echo json_encode([
+                'success'=>true,
+                'total_prospects'=>$total,
+                'signed_prospects'=>$signed,
+                'rate'=>$rate,
+                'rate_percent'=>round($rate*100,2)
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
     }
 
     http_response_code(400);
