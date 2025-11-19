@@ -65,7 +65,7 @@
     */
     async function loadUsers() {
         // Charge la liste des utilisateurs pour alimenter le <select>
-        const data = await fetchJSON('scripts/users_api.php?action=list');
+        const data = await fetchJSON('scripts/admin_api.php?action=list');
         userSelect.innerHTML = '<option value="">Choisir un utilisateur...</option>';
         data.users.forEach(u => {
             const opt = document.createElement('option');
@@ -84,7 +84,7 @@
     async function loadDetail(id) {
         // Charge le détail d'un utilisateur par son ID et remplit le formulaire
         if (!id) return;
-        const data = await fetchJSON(`scripts/users_api.php?action=detail&id=${encodeURIComponent(id)}`);
+        const data = await fetchJSON(`scripts/admin_api.php?action=detail&id=${encodeURIComponent(id)}`);
         const u = data.user;
         currentId = u.id;
         prenomEl.value = u.prenom || '';
@@ -166,7 +166,7 @@
         const ok = confirm('Confirmer la suppression de cet utilisateur ?');
         if (!ok) return;
         try {
-            await fetchJSON('scripts/users_api.php', {
+            await fetchJSON('scripts/admin.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'delete', id: currentId })
@@ -215,7 +215,7 @@
                     }
                 };
         try {
-            const resp = await fetchJSON('scripts/users_api.php', {
+            const resp = await fetchJSON('scripts/admin_api.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
