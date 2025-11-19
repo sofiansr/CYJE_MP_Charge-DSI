@@ -211,6 +211,51 @@
             echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
             exit;
         }
+    } elseif ($action === 'status_distribution') {
+        // Distribution par status_prospect (bar chart)
+        try {
+            $pdo = new PDO(
+                'mysql:host=localhost;port=3306;dbname=CYJE;charset=utf8mb4',
+                'root',
+                '',
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
+            );
+            $order = [
+                'A contacter',
+                'Contacté',
+                'A rappeler',
+                'Relancé',
+                'RDV',
+                'PC',
+                'Signé',
+                'PC refusée',
+                'Perdu'
+            ];
+            $base = array_fill_keys($order, 0);
+            $stmt = $pdo->query("SELECT status_prospect AS sp, COUNT(*) AS c FROM prospect WHERE status_prospect IS NOT NULL GROUP BY status_prospect");
+            $rows = $stmt->fetchAll();
+            $total = 0;
+            foreach ($rows as $r) {
+                $sp = $r['sp'];
+                $count = (int)$r['c'];
+                if (isset($base[$sp])) { $base[$sp] = $count; }
+                $total += $count;
+            }
+            echo json_encode([
+                'success'=>true,
+                'labels'=>array_keys($base),
+                'counts'=>array_values($base),
+                'total'=>$total
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success'=>false,'error'=>'Erreur serveur']);
+            exit;
+        }
     }
 
     http_response_code(400);

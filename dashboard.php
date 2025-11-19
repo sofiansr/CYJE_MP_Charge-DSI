@@ -94,6 +94,14 @@
                                     <p class="stat-label">Taux de conversion</p>
                                 </div>
                             </div>
+                            <div class="subcard chart" id="subcard-status">
+                                <div class="chart-inner">
+                                    <p class="subcard-title">Status prospects</p>
+                                    <div class="chart-wrapper chart-wrapper--wide">
+                                        <canvas id="chart-status" aria-label="Répartition par statut prospect" role="img"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                     </div>
                 </section>
             </div>
