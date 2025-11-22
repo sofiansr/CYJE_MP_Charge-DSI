@@ -77,14 +77,17 @@
                 - Formulaire #user-form: champs de l'utilisateur sélectionné (readonly par défaut)
             -->
             <section class="card admin-wrap" style="padding:1rem;">
-                <div style="display:flex; gap:.75rem; align-items:flex-end;">
-                    <label style="flex:1;">
+                <div style="display:flex; gap:.75rem; align-items:flex-end; flex-wrap:wrap;">
+                    <label style="flex:1; min-width:220px;">
                         Utilisateur
                         <select id="user-select" class="select">
                             <option value="">Choisir un utilisateur...</option>
                         </select>
                     </label>
-                    <button id="reload-users" type="button" class="btn">Rafraîchir</button>
+                    <div style="display:flex; gap:.5rem;">
+                        <button id="reload-users" type="button" class="btn" title="Recharger la liste des utilisateurs">Rafraîchir</button>
+                        <button id="user-add" type="button" class="btn btn-primary" title="Créer un nouvel utilisateur">Ajouter</button>
+                    </div>
                 </div>
 
                 <form id="user-form" style="margin-top:1rem;">

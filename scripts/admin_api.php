@@ -122,15 +122,16 @@
                 exit;
             }
 
-            // Génère un mot de passe temporaire
+            // Génère un mot de passe (affiché à l'admin) puis hashage avant stockage
             $tempPassword = bin2hex(random_bytes(6)); // 12 caractères hexadécimaux
+            $hashed = password_hash($tempPassword, PASSWORD_DEFAULT);
 
-            // Insertion du nouvel utilisateur
+            // Insertion du nouvel utilisateur (mot de passe hashé)
             $stmt = $pdo->prepare('INSERT INTO users (prenom, nom, email, role, password) VALUES (?, ?, ?, ?, ?)');
-            $stmt->execute([$prenom, $nom, $email, $role, $tempPassword]);
+            $stmt->execute([$prenom, $nom, $email, $role, $hashed]);
             $newId = (int)$pdo->lastInsertId(); // Récupère l'ID auto-incrémenté
 
-            // Retourne l'ID et le mot de passe temporaire au client (admin.js l'affichera)
+            // Retourne l'ID et le mot de passe au client (admin.js l'affichera)
             echo json_encode(['success' => true, 'id' => $newId, 'temp_password' => $tempPassword]);
             exit;
         }

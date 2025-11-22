@@ -41,12 +41,14 @@
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
-    //if (!$user || !password_verify($password, $user['password'])) {
-    if (!$user || ($password != $user['password'])) {
+    // Vérification strictement via password_verify (mots de passe doivent être hashés)
+    //if (!$user || ($password != $user['password'])) {
+    if (!$user || !password_verify($password, $user['password'])) {
+        password_hash($password, PASSWORD_DEFAULT);
         echo json_encode(['success' => false, 'error' => 'Email ou mot de passe incorrect']);
         exit;
     }
-
+    // if (!$user || (^$password != $user['password']))
 
     session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];

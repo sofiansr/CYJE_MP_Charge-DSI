@@ -233,8 +233,8 @@
                 userSelect.value = String(newId);
                 currentId = newId;
                 IS_NEW = false;
-                // Affiche le mot de passe temporaire si retourné par l'API
-                alert(resp.temp_password ? `Utilisateur créé. Mot de passe temporaire: ${resp.temp_password}` : 'Utilisateur créé.');
+                // Affiche le mot de passe si retourné par l'API
+                alert(resp.temp_password ? `Utilisateur créé. Mot de passe : ${resp.temp_password}` : 'Utilisateur créé.');
             } else {
                 // Après mise à jour: rafraîchit l'étiquette dans la liste si nécessaire
                 const selIdx = userSelect.selectedIndex;
