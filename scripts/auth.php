@@ -44,7 +44,7 @@
     // Vérification strictement via password_verify (mots de passe doivent être hashés)
     //if (!$user || ($password != $user['password'])) {
     if (!$user || !password_verify($password, $user['password'])) {
-        password_hash($password, PASSWORD_DEFAULT);
+        //password_hash($password, PASSWORD_DEFAULT);
         echo json_encode(['success' => false, 'error' => 'Email ou mot de passe incorrect']);
         exit;
     }
