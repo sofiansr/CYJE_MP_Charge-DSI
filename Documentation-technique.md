@@ -10,11 +10,11 @@ Le présent document est une documentation technique de la Mission Piou de NISAR
 - Pour installer l'environnement nécessaire au bon fonctionnement du site web, veuillez installer [XAMPP](https://www.apachefriends.org/fr/index.html) (avec au minimum Apache et MySQL).
     - Lisez l'avertissement ci-dessous ! Notez donc bien le chemin d'installation choisi car il sera utilisé dans la suite de cette documentation.
 > [!NOTE]
-> XAMPP est l'environnement utilisé pour le dévelopement de cette MP.
+> XAMPP est l'environnement utilisé pour le développement de cette MP.
 > Cependant, n'importe quel serveur PHP et instance MySQL (MariaDB de préférence) devraient fonctionner.
 
 > [!WARNING]
-> Si vous êtes sous Windows, veillez toujours à **lancer XAMPP en tant qu'administrateur**, pour éviter quelconques corruptions de la base de données et/ou de l'environnement de développement.
+> Si vous êtes sous Windows, veillez toujours à **lancer XAMPP en tant qu'administrateur**, pour éviter toute corruptions de la base de données et/ou de l'environnement de développement.
 > Veillez également à **ne pas installer XAMPP dans** ```C:/Program Files``` ou ```C:/Program Files (x86)``` pour éviter les problèmes de lecture/écriture.
 
 > [!CAUTION]
@@ -34,7 +34,7 @@ A titre d'information :
         -     git clone https://github.com/sofiansr/CYJE_MP_Charge-DSI.git
     - Sinon, téléchargez le code via le bouton vert "Code" du répertoire GitHub, et décompressez l'archive ZIP dans ```XAMPP/htdocs``` via 7-Zip ou WinRAR.
         - ![](https://i.imgur.com/kFcynsn.png)
-    - Dans tous les cas, vous devirez avoir une architecture du style : ```[...]/XAMPP/htdocs/CYJE_MP_Charge-DSI/[fichiers du site]```.
+    - Dans tous les cas, vous devrirez avoir une architecture du style : ```[...]/XAMPP/htdocs/CYJE_MP_Charge-DSI/[fichiers du site]```.
 - Lancez XAMPP.
 - Démarrez le service Apache puis MySQL.
 - Cliquez sur le bouton ```Admin```, sur la ligne du service MySQL.
@@ -47,14 +47,14 @@ A titre d'information :
 - Repérez la ligne de la table ```users```, puis cliquez sur ```Insérer```.
     - ![](https://i.imgur.com/irIEKst.png)
 - Insérons le premier ```ADMIN``` du site :
-    - Ne rentrez pas d'ID. Vous pouvez le faire, mais la base de donnée le fait déjà à votre place.
+    - Ne rentrez pas d'ID. Vous pouvez le faire, mais la base de données le fait déjà à votre place.
     - Rentrez nom, prénom, et email.
-    - Générez un mot de passe complexe, convertissez le en hash via [ce site](https://onlinephp.io/password-hash) (php version = 8.2.12, cost=10) puis copier collez le dans le champ ```password```.
-    - Choissisez ```ADMIN```.
+    - Générez un mot de passe complexe, convertissez-le en hash via [ce site](https://onlinephp.io/password-hash) (php version = 8.2.12, cost=10) puis copier-collez le dans le champ ```password```.
+    - Choississez ```ADMIN```.
     - Cliquez enfin sur ```Exécuter```.
     - ![](https://i.imgur.com/xYKnMJm.png)
-- Rendez vous sur ```http://localhost/CYJE_MP_Charge-DSI/connexion.html``` pour vérifier vos identifiants et vous connecter au site.
-    - ![](https://i.imgur.com/P8NPRXM.png)
+- Rendez-vous sur ```http://localhost/CYJE_MP_Charge-DSI/connexion.html``` pour vérifier vos identifiants et vous connecter au site.
+    - ![](https://i.imgur.com/WoxrUSe.png)
 
 -------
 ### Fonctionnement
@@ -75,7 +75,7 @@ CYJE_MP_Charge-DSI/
 │   └── (Logo et images nécessaires pour le site)
 ├── scripts/
 │   ├── admin_api.php (back-end de admin.php)
-│   ├── admin.js (front-end de admin.js)
+│   ├── admin.js (front-end de admin.php)
 │   ├── auth.php (back-end de connexion.html)
 │   ├── dashboard_api.php (back-end de dashboard.php)
 │   ├── home.js (front-end de dashboard.php)
@@ -86,7 +86,7 @@ CYJE_MP_Charge-DSI/
 │   ├── connexion.css
 │   ├── dashboard.css
 │   └── prospects.css (également utilisé par admin.php)
-├── admin.php (page de consultation, d'ajout, de modification et de suppresion d'utilisateurs)
+├── admin.php (page de consultation, d'ajout, de modification et de suppression d'utilisateurs)
 ├── dashboard.php (page d'accueil statistiques)
 ├── prospects.php (page des prospects, avec ajout, modification, suppression, filtrage et tri) 
 ├── README.md
@@ -95,7 +95,7 @@ CYJE_MP_Charge-DSI/
 └── bdd_init.sql (Commandes SQL à exécuter lors de la création de la base de données)
 ```
 
-La police d'écriture *Barlow Semi Condensed* est récupérée auprès de Google Font.
+La police d'écriture *Barlow Semi Condensed* est récupérée auprès de Google Fonts.
 
 Un chef de projet peut gérer plusieurs prospects à la fois, cependant un prospect est géré par un seul chef de projet.
 
@@ -109,7 +109,7 @@ Il est crucial de désigner un responsable du site web, qui aura le rôle ```ADM
 
 Ce dernier supprimera si nécessaire le compte du précédent responsable, ou le rétrogradera en tant qu'```USER```.
 
-Dans le cas où cette procédure n'est pas respectée, et que vous n'arrivez pas à créer un nouveau utilisateur faute d'accès à un compte ```ADMIN```, vous pouvez accéder à phpMyAdmin (ou la console SQL de l'environnement que vous avez choisi) afin d'insérer un nouvel ```ADMIN```.
+Dans le cas où cette procédure n'est pas respectée, et que vous n'arrivez pas à créer un nouvel utilisateur faute d'accès à un compte ```ADMIN```, vous pouvez accéder à phpMyAdmin (ou la console SQL de l'environnement que vous avez choisi) afin d'insérer un nouvel ```ADMIN```.
 
 Il est en général très recommandé de faire des sauvegardes de ses bases de données. Par exemple, sur phpMyAdmin, vous pouvez aller dans ```cyje```, puis dans l'onglet "Exporter".
 
