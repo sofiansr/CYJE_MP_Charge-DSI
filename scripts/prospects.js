@@ -76,6 +76,8 @@
     let fField = '';              // nom du champ pour filtrage ciblé
     let fValue = '';              // valeur du filtre ciblé
     let debounceTimer;            // identifiant du timer de debounce pour la recherche
+    let sortField = '';           // champ de tri courant (entreprise|secteur|chef_projet)
+    let sortDir = 'asc';          // direction de tri ('asc' ou 'desc')
 
     // status prospect
     const STATUS_OPTIONS = ['A contacter', 'Contacté', 'A rappeler', 'Relancé', 'RDV', 'PC', 'Signé', 'PC refusée', 'Perdu'];
@@ -189,6 +191,10 @@
             params.set('filter_field', fField);
             params.set('filter_value', fValue);
         }
+        if (sortField) {
+            params.set('sort_field', sortField);
+            params.set('sort_dir', sortDir);
+        }
 
         // Affiche un état "chargement" dans le tableau (une seule ligne)
         tbody.innerHTML = '<tr><td colspan="17" style="text-align:center; padding:1rem; color:var(--text-muted);">Chargement...</td></tr>';
@@ -251,6 +257,7 @@
             btnPrev.style.display = page <= 1 ? 'none' : '';
             btnNext.style.display = page >= totalPages ? 'none' : '';
             pageInfo.textContent = `Page ${page} / ${totalPages}`; // libellé central
+            updateSortIndicators();
         } catch (e) {
             // En cas d'erreur (réseau/JSON/erreur applicative), on informe dans le tableau
             tbody.innerHTML = `<tr><td colspan="17" style="color:#c1121f; font-weight:700; text-align:center; padding:1rem;">${escapeHtml(e.message)}</td></tr>`;
@@ -721,4 +728,32 @@
     // Premier rendu: prépare l'UI de filtre et charge la page initiale
     updateFilterInputVisibility();
     load();
+
+    // Tri: gestion des clics sur les en-têtes avec .sortable
+    const sortableHeaders = document.querySelectorAll('thead th.sortable');
+    function applySort(field) {
+        if (sortField === field) {
+            sortDir = (sortDir === 'asc') ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDir = 'asc';
+        }
+        page = 1;
+        load();
+    }
+    function updateSortIndicators() {
+        sortableHeaders.forEach(th => {
+            const f = th.getAttribute('data-field');
+            th.classList.remove('sorted-asc','sorted-desc');
+            if (f === sortField) {
+                th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+            }
+        });
+    }
+    sortableHeaders.forEach(th => {
+        th.addEventListener('click', () => {
+            const f = th.getAttribute('data-field');
+            if (f) applySort(f);
+        });
+    });
 })();

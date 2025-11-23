@@ -181,8 +181,34 @@ body {
 }
 /* En-têtes collants: restent visibles pendant le scroll */
 .table thead th {
-    position: sticky; top: 0; background: #f3f5f8; text-align: left; font-size: .9rem; color: var(--text-muted);
-    padding: .85rem .75rem; border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0; background: #f3f5f8;
+    text-align: left;
+    font-size: .9rem;
+    color: var(--text-muted);
+    padding: .85rem .75rem;
+    border-bottom: 1px solid var(--border);
+}
+.table thead th.sortable {
+    cursor: pointer;
+}
+.table thead th.sortable.sorted-asc {
+    color: var(--bg-accent);
+}
+.table thead th.sortable.sorted-desc {
+    color: var(--bg-accent);
+}
+.table thead th.sortable::after {
+    content: '';
+    display:inline-block;
+    margin-left:4px;
+    font-size:.7rem;
+}
+.table thead th.sortable.sorted-asc::after {
+    content: '\25B2';
+}
+.table thead th.sortable.sorted-desc::after {
+    content: '\25BC';
 }
 .table tbody td {
     padding: .8rem .75rem;
@@ -197,7 +223,12 @@ body {
 
 /* Pastille de statut (neutre/secondaire) */
 .status {
-    display: inline-block; padding: .25rem .6rem; border-radius: 999px; font-weight: 700; font-size: .8rem; background: #eef2ff; color: #4338ca;
+    display: inline-block;
+    padding: .25rem .6rem;
+    border-radius: 999px;
+    font-weight: 700; font-size: .8rem;
+    background: #eef2ff;
+    color: #4338ca;
 }
 .badge {
     display: inline-block;
@@ -323,7 +354,10 @@ body {
 /* Backdrop quand panneau ouvert */
 body.detail-panel-open::after {
     content:'';
-    position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:105;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    z-index:105;
 }
 
 /* Formulaire d'ajout dans le panneau */
@@ -352,18 +386,47 @@ body.detail-panel-open::after {
     color: #374151;
 }
 .form-grid .input,
-.form-grid .select { width: 100%; }
-.form-section h3 { margin:.75rem 0 .5rem; font-size:1rem; font-weight:700; }
-.contacts-list { display:flex; flex-direction:column; gap:.65rem; margin-bottom:.5rem; }
+.form-grid .select {
+    width: 100%;
+}
+.form-section h3 {
+    margin:.75rem 0 .5rem;
+    font-size:1rem;
+    font-weight:700;
+}
+.contacts-list {
+    display:flex;
+    flex-direction:column;
+    gap:.65rem;
+    margin-bottom:.5rem;
+}
 /* Pour une présentation verticale, on masque l'en-tête colonnes */
-.contacts-head { display:none; }
+.contacts-head {
+    display:none;
+}
 /* Les champs d'un contact empilés verticalement pour éviter le débordement */
-.contact-row { display:grid; grid-template-columns: 1fr; gap:.5rem; align-items:start; padding:.5rem; background:#fff; border:1px solid var(--border); border-radius: var(--radius); }
-.contact-row .input { width: 100%; }
-.contact-row .remove-contact { min-width: 2.25rem; justify-self:end; }
+.contact-row {
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:.5rem;
+    align-items:start;
+    padding:.5rem;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius: var(--radius);
+}
+.contact-row .input {
+    width: 100%;
+}
+.contact-row .remove-contact {
+    min-width: 2.25rem;
+    justify-self:end;
+}
 
 @media (max-width: 700px) {
-    .form-grid { grid-template-columns: 1fr; }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 
@@ -475,12 +538,21 @@ tbody a[href^="mailto:"]:hover {
 
 @media (max-width: 700px) {
     /* Une seule colonne pour toutes les sections du footer */
-    .footer-col, .footer-brand { flex: 1 1 100%; min-width: 0; }
+    .footer-col, .footer-brand {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
 }
 
 @media (max-width: 900px) {
-    .nav-inner { grid-template-columns: auto 1fr auto; }
-    .nav-links { gap: .75rem; }
+    .nav-inner {
+        grid-template-columns: auto 1fr auto;
+    }
+    .nav-links {
+        gap: .75rem;
+    }
     /* La toolbar passe en pile (1 colonne) */
-    .toolbar { grid-template-columns: 1fr; }
+    .toolbar {
+        grid-template-columns: 1fr;
+    }
 }

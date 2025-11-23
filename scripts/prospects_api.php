@@ -446,6 +446,9 @@
     // filter_field / filter_value: filtrage ciblé (si field autorisé)
     $filterField = trim($_GET['filter_field'] ?? '');
     $filterValue = trim($_GET['filter_value'] ?? '');
+    // Tri: sort_field (entreprise|secteur|chef_projet), sort_dir (asc|desc)
+    $sortField = trim($_GET['sort_field'] ?? '');
+    $sortDir = strtolower(trim($_GET['sort_dir'] ?? 'asc'));
 
     // whitelist des champs autorisés pour le filtrage
     // évite l'injection SQL via le nom de colonne
@@ -529,6 +532,32 @@
         // - Contacts agrégés via GROUP_CONCAT (séparateur "\n"), pour affichage multi-lignes côté client
         // - Chef de projet: priorise "prenom nom" si existants, sinon email
         // - Tri: relance la plus récente d'abord, puis id décroissant
+        // Détermine l'ORDER BY selon les paramètres de tri validés (whitelist)
+        $allowedSort = ['entreprise','secteur','chef_projet','relance_le','date_premier_contact'];
+        $orderSql = 'p.relance_le DESC, p.id DESC'; // défaut historique
+        if ($sortField !== '' && in_array($sortField, $allowedSort, true)) {
+            $dir = ($sortDir === 'desc') ? 'DESC' : 'ASC';
+            switch ($sortField) {
+                case 'entreprise':
+                    $orderSql = "p.entreprise $dir, p.id DESC"; break;
+                case 'secteur':
+                    $orderSql = "p.secteur $dir, p.id DESC"; break;
+                case 'chef_projet':
+                    $orderSql = "chef_projet $dir, p.id DESC"; break; // alias autorisé
+                case 'relance_le':
+                    // Nulls en dernier si ASC, en premier si DESC
+                    $orderSql = $dir === 'ASC'
+                        ? "p.relance_le IS NULL ASC, p.relance_le ASC, p.id DESC"
+                        : "p.relance_le IS NULL DESC, p.relance_le DESC, p.id DESC";
+                    break;
+                case 'date_premier_contact':
+                    $orderSql = $dir === 'ASC'
+                        ? "p.date_premier_contact IS NULL ASC, p.date_premier_contact ASC, p.id DESC"
+                        : "p.date_premier_contact IS NULL DESC, p.date_premier_contact DESC, p.id DESC";
+                    break;
+            }
+        }
+
         $sql = "SELECT
                 p.id,
                 p.entreprise,
@@ -558,7 +587,7 @@
                 LEFT JOIN users u ON u.id = p.chef_de_projet_id
                 $wSql
                 GROUP BY p.id
-                ORDER BY p.relance_le DESC, p.id DESC
+                ORDER BY $orderSql
                 LIMIT ? OFFSET ?";
         $stmt = $pdo->prepare($sql);
 

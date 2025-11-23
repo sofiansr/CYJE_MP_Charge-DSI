@@ -99,21 +99,21 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Entreprise</th>
-                            <th>Secteur</th>
+                            <th class="sortable" data-field="entreprise" title="Trier par entreprise">Entreprise</th>
+                            <th class="sortable" data-field="secteur" title="Trier par secteur">Secteur</th>
                             <th>Status</th>
                             <th>Nom(s)</th>
                             <th>Prénom(s)</th>
                             <th>Email(s)</th>
                             <th>Tel(s)</th>
                             <th>Poste(s)</th>
-                            <th>Relancé le</th>
+                            <th class="sortable" data-field="relance_le" title="Trier par date de relance">Relancé le</th>
                             <th>Type acquisition</th>
-                            <th>Date 1er contact</th>
+                            <th class="sortable" data-field="date_premier_contact" title="Trier par date 1er contact">Date 1er contact</th>
                             <th>Type 1er contact</th>
                             <th>Chaleur</th>
                             <th>Offre prestation</th>
-                            <th>Chef de projet</th>
+                            <th class="sortable" data-field="chef_projet" title="Trier par chef de projet">Chef de projet</th>
                             <th>Détails</th>
                         </tr>
                     </thead>
