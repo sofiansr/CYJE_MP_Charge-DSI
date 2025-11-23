@@ -58,7 +58,7 @@
                         <li><a href="dashboard.php">Tableau de bord</a></li>
                         <li><a href="prospects.php">Recherche de prospects</a></li>
                         <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'ADMIN'): ?>
-                            <li><a href="profile.php" class="active">Profil</a></li>
+                            <li><a href="admin.php" class="active">Page administrateur</a></li>
                         <?php endif; ?>
                         <li><a href="scripts/logout.php">Se déconnecter</a></li>
                     </ul>

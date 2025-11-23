@@ -3,7 +3,7 @@
 
 /* Conteneur principal */
 .center-wrap {
-    min-height: calc(100vh - 170px);
+    /*min-height: calc(100vh - 170px);*/
     display: flex;
     align-items: flex-start;
     justify-content: center;
