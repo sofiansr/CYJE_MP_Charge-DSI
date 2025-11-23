@@ -59,7 +59,7 @@ A titre d'information :
 -------
 ### Fonctionnement
 
-Ce projet utilise les technologies suivantes pour fonctionner
+Ce projet utilise les technologies suivantes pour fonctionner :
 - HTML
 - CSS
 - PHP (pages dynamiques et back-end)
@@ -91,7 +91,7 @@ CYJE_MP_Charge-DSI/
 ├── prospects.php (page des prospects, avec ajout, modification, suppression, filtrage et tri) 
 ├── README.md
 ├── Documentation-technique.md
-├── Manuel-Utilisation.md
+├── Manuel-Utilisateur.md
 └── bdd_init.sql (Commandes SQL à exécuter lors de la création de la base de données)
 ```
 
@@ -111,7 +111,9 @@ Ce dernier supprimera si nécessaire le compte du précédent responsable, ou le
 
 Dans le cas où cette procédure n'est pas respectée, et que vous n'arrivez pas à créer un nouvel utilisateur faute d'accès à un compte ```ADMIN```, vous pouvez accéder à phpMyAdmin (ou la console SQL de l'environnement que vous avez choisi) afin d'insérer un nouvel ```ADMIN```.
 
-Il est en général très recommandé de faire des sauvegardes de ses bases de données. Par exemple, sur phpMyAdmin, vous pouvez aller dans ```cyje```, puis dans l'onglet "Exporter".
+> [!IMPORTANT]
+> Il est en général très recommandé de faire des sauvegardes de ses bases de données. Par exemple, sur phpMyAdmin, vous pouvez aller dans ```cyje```, puis dans l'onglet "Exporter".
+
 
 -------
 Made with 💙 in Cergy-Pontoise, France
