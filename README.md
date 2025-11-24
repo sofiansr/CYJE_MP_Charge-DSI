@@ -7,3 +7,10 @@ Ce répertoire GitHub représente l'ensemble des rendus de la Mission Piou de NI
 [Manuel utilisateur](https://github.com/sofiansr/CYJE_MP_Charge-DSI/blob/main/Manuel-Utilisateur.md) 
 
 [Documentation technique](https://github.com/sofiansr/CYJE_MP_Charge-DSI/blob/main/Documentation-technique.md)
+
+-------
+Made with 💙 in Cergy-Pontoise, France
+
+<a href="https://github.com/sofiansr/CYJE_MP_Charge-DSI/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sofiansr/CYJE_MP_Charge-DSI" />
+</a>
